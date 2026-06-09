@@ -121,6 +121,36 @@ tr:hover .act-btns{opacity:1}
 .det-content{flex:1;min-width:0;padding:20px 24px;overflow-y:auto}
 .det-section-title{font-size:13px;font-weight:800;color:var(--t0);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--b1)}
 .det-content::-webkit-scrollbar{width:5px}.det-content::-webkit-scrollbar-thumb{background:var(--b1);border-radius:10px}
+/* ── CALENDAR VIEW ── */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--b1);border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden}
+.cal-day-hdr{background:var(--c1);text-align:center;font-size:10px;font-weight:700;color:var(--t2);padding:6px 0;text-transform:uppercase;letter-spacing:.5px}
+.cal-cell{background:var(--c0);min-height:90px;padding:5px;position:relative;vertical-align:top}
+.cal-cell.other-month{background:var(--c1)}.cal-cell.today{background:var(--inkl)}
+.cal-date-num{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:3px}
+.cal-cell.today .cal-date-num{color:var(--inkt)}
+.cal-evt{font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .1s;line-height:1.4}
+.cal-evt:hover{opacity:.8}
+.cal-more{font-size:9px;color:var(--t3);padding:2px 4px;cursor:pointer}
+.cal-more:hover{color:var(--ink)}
+.cal-filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.cal-filter-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--b1);background:var(--c0);cursor:pointer;font-size:11px;font-weight:600;color:var(--t2);transition:all .15s;user-select:none}
+.cal-filter-pill:hover{border-color:var(--ink);color:var(--ink)}
+.cal-filter-pill.on{border-color:transparent;color:#fff}
+.cal-filter-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+/* ── INDEX CONFIG ── */
+.cfg-list-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--b0);cursor:pointer;transition:background .12s}
+.cfg-list-row:hover{background:var(--c1)}
+.cfg-list-row.on{background:var(--inkl)}
+.cfg-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);padding:10px 0 6px;border-bottom:1px solid var(--b0);margin-bottom:10px}
+.cfg-field{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)}
+.cfg-label{font-size:11px;font-weight:600;color:var(--t1);width:160px;flex-shrink:0;padding-top:4px}
+.cfg-ctrl{flex:1}
+.cfg-hint{font-size:10px;color:var(--t2);margin-top:3px}
+.cfg-save-bar{position:sticky;bottom:0;background:var(--c0);border-top:1px solid var(--b1);padding:10px 16px;display:flex;gap:8px;justify-content:flex-end;margin:-16px -16px 0}
+.cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.cal-nav-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--b1);background:var(--c0);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cal-nav-btn:hover{background:var(--c1);border-color:var(--ink)}
+.cal-month-lbl{font-size:15px;font-weight:800;color:var(--t0);flex:1}
 /* ── SCHEDULE EVENT BLOCKS ── */
 .evt-blk{border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:7px;overflow:hidden;transition:border-color .2s}
 .evt-blk.on{border-color:var(--ink)}
@@ -245,6 +275,8 @@ tr:hover .act-btns{opacity:1}
     <button class="sbi on" onclick="showView('v-repo',this)"><span class="sbi-icon">📋</span><span>Index Repository</span></button>
     <button class="sbi" onclick="showView('v-add',this);initWz()"><span class="sbi-icon">➕</span><span>Add Index</span></button>
     <button class="sbi" onclick="showView('v-assign',this);renderAssign()"><span class="sbi-icon">👤</span><span>Assignment</span><span class="sbi-badge" id="assign-badge">—</span></button>
+    <button class="sbi" onclick="showView('v-cal',this);renderCal()"><span class="sbi-icon">&#128197;</span><span>Calendar</span></button>
+    <button class="sbi" onclick="showView('v-cfg',this);renderCfgList()" id="sbi-cfg"><span class="sbi-icon">&#9881;</span><span>Index Config</span></button>
     <div class="sb-sec">Tools</div>
     <button class="sbi" onclick="showView('v-hol',this);renderHol()"><span class="sbi-icon">🗓</span><span>Holiday List</span></button>
     <button class="sbi" onclick="showView('v-dl',this);applyDL()"><span class="sbi-icon">⬇</span><span>Download Center</span></button>
@@ -475,6 +507,30 @@ tr:hover .act-btns{opacity:1}
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:10px">Review team workload</div>
     <div id="workload-grid" class="an-grid"></div>
   </div>
+  <div id="assign-date-filter" style="display:none;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r8);padding:12px 14px;margin-bottom:12px">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:10px">Filter by upcoming date</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="fg" style="margin-bottom:0;min-width:150px">
+        <label class="flbl">Date type</label>
+        <select class="fsel" id="assign-date-type" onchange="renderAssign()">
+          <option value="">All date types</option>
+          <option value="effective">Effective date</option>
+          <option value="selection">Selection date</option>
+          <option value="weightFreeze">Weight freeze date</option>
+          <option value="clientComm">Client communication date</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="flbl">From</label>
+        <input class="finp" type="date" id="assign-date-from" onchange="renderAssign()" style="width:130px">
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="flbl">To</label>
+        <input class="finp" type="date" id="assign-date-to" onchange="renderAssign()" style="width:130px">
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="clearAssignDateFilter()">&#10005; Clear</button>
+    </div>
+  </div>
   <div class="toolbar"><div class="searchbox"><span class="si">⌕</span><input placeholder="Search indices…" id="assign-q" oninput="renderAssign()"></div></div>
   <div class="tbl-wrap">
     <table style="table-layout:fixed">
@@ -486,6 +542,64 @@ tr:hover .act-btns{opacity:1}
     </table>
   </div>
 </div>
+
+<!-- ══ CALENDAR VIEW ══ -->
+<div class="view" id="v-cal">
+  <div class="ph">
+    <div><h1>Calendar</h1><p>Upcoming index dates across the repository</p></div>
+  </div>
+  <div style="padding:0 24px 24px">
+    <!-- Filter pills -->
+    <div class="cal-filter-bar" id="cal-filters">
+      <span style="font-size:11px;font-weight:700;color:var(--t2)">Show:</span>
+      <div class="cal-filter-pill on" data-key="effective"   style="background:#166B0F;border-color:#166B0F" onclick="toggleCalFilter('effective',this)"><span class="cal-filter-dot" style="background:#fff"></span>Effective</div>
+      <div class="cal-filter-pill on" data-key="selection"   style="background:#4B35CC;border-color:#4B35CC" onclick="toggleCalFilter('selection',this)"><span class="cal-filter-dot" style="background:#fff"></span>Selection</div>
+      <div class="cal-filter-pill on" data-key="weightFreeze" style="background:#0B7160;border-color:#0B7160" onclick="toggleCalFilter('weightFreeze',this)"><span class="cal-filter-dot" style="background:#fff"></span>Weight Freeze</div>
+      <div class="cal-filter-pill on" data-key="clientComm"  style="background:#A81919;border-color:#A81919" onclick="toggleCalFilter('clientComm',this)"><span class="cal-filter-dot" style="background:#fff"></span>Client Comm</div>
+    </div>
+    <!-- Month nav -->
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="shiftCal(-1)">&#8249;</button>
+      <div class="cal-month-lbl" id="cal-month-lbl"></div>
+      <button class="cal-nav-btn" onclick="shiftCal(1)">&#8250;</button>
+      <button class="btn btn-sm btn-ghost" onclick="calToday()" style="margin-left:4px">Today</button>
+    </div>
+    <!-- Day headers -->
+    <div class="cal-grid" id="cal-grid">
+      <div class="cal-day-hdr">Sun</div><div class="cal-day-hdr">Mon</div>
+      <div class="cal-day-hdr">Tue</div><div class="cal-day-hdr">Wed</div>
+      <div class="cal-day-hdr">Thu</div><div class="cal-day-hdr">Fri</div>
+      <div class="cal-day-hdr">Sat</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ INDEX CONFIG VIEW ══ -->
+<div class="view" id="v-cfg">
+  <div class="ph">
+    <div><h1>Index Configuration</h1><p id="cfg-ph-sub">Select an index to configure its schedule, dates and event settings</p></div>
+    <div class="ph-acts" id="cfg-ph-acts"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 110px);overflow:hidden">
+    <!-- LEFT: index list -->
+    <div style="border-right:1px solid var(--b1);overflow-y:auto;background:var(--c1)">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--c1);z-index:1">
+        <div class="searchbox" style="margin-bottom:0"><span class="si">⌕</span><input id="cfg-q" placeholder="Search…" oninput="renderCfgList()" style="font-size:11px"></div>
+      </div>
+      <div id="cfg-index-list"></div>
+    </div>
+    <!-- RIGHT: config panel -->
+    <div style="overflow-y:auto;padding:16px" id="cfg-panel">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--t3)">
+        <div style="font-size:32px;margin-bottom:8px">&#9881;</div>
+        <div style="font-size:13px;font-weight:600">Select an index from the list</div>
+        <div style="font-size:11px;margin-top:4px">to view and edit its configuration</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- ══ HOLIDAY VIEW ══ -->
 <div class="view" id="v-hol">
@@ -709,18 +823,41 @@ let SEEDED=false;
 function genDates(x){
   const months=Object.keys(x.monthly||{});
   const MMAP={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-  const m=months.length?MMAP[months[0]]??8:8;
-  const y=2025;
-  const eff=new Date(y,m,26);
-  const f=d=>d.toISOString().slice(0,10);
-  const sub=(d,n)=>{const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
+  // Use today as the base so calendar always shows current & upcoming dates
+  const now=new Date();
+  const nowY=now.getFullYear(), nowM=now.getMonth();
+  // Pick an effective date: spread across the next 0-5 months so the calendar
+  // is populated across several months, using the index's monthly schedule day
+  // (or a seeded day based on name hash) within that month.
+  const hash=x.name.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0);
+  const monthOffset=hash%6;           // 0-5 months ahead
+  const dayOfMonth=5+(hash%20);       // day 5-24 (avoids month-end edge cases)
+  var em=nowM+monthOffset, ey=nowY;
+  if(em>11){em-=12;ey++;}
+  const eff=new Date(ey,em,dayOfMonth);
+  const f=function(d){return d.toISOString().slice(0,10);};
+  const sub=function(d,n){const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
   return{effective:f(eff),selection:f(sub(eff,30)),weightFreeze:f(sub(eff,4)),qc:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+}
+function rmbForLabel(label){
+  /* Business rule: label always determines RMB.
+     Black Label → Review | White Label → Review | Calculation → OPS */
+  if(label==='Black Label'||label==='White Label') return 'Review';
+  if(label==='Calculation') return 'Operations';
+  return 'Review'; // default
 }
 function seedRepo(){
   if(SEEDED)return;SEEDED=true;
+  // Enforce RMB from label — overrides whatever the raw ICAL data says
+  ICAL.forEach(x=>{ x.rmb=rmbForLabel(x.label); });
+  var _si=0;
   ICAL.filter(x=>x.rmb==='Review').slice(0,40).forEach(x=>{
     getAsgn(x.name,x.rmb);
-    REPO.push({...x,id:x.name,stage:'To Start',dates:genDates(x)});
+    // Give some indices Fast Entry, some Special Rebalance, some both
+    var hF=[2,5,9,14,20].includes(_si);  // hasFast
+    var hS=[3,7,12,18,22].includes(_si); // hasSpec
+    REPO.push({...x,id:x.name,stage:'To Start',dates:genDates(x),hasFast:hF,hasSpec:hS});
+    _si++;
   });
 }
 
@@ -1001,8 +1138,8 @@ function renderDetEvts(id,pane){
     +'<div style="margin-bottom:14px">'
     +'<div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px">Select event type to record:</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn" id="evt-btn-fe" onclick="showEvtForm(\'fe\',\''+id+'\')">&#9889; Fast Entry</button>'
-    +'<button class="btn" id="evt-btn-sr" onclick="showEvtForm(\'sr\',\''+id+'\')">&#9878; Special Rebalance</button>'
+    +(x.hasFast?'<button class="btn" id="evt-btn-fe" onclick="showEvtForm(\'fe\',\''+id+'\')">'+'&#9889; Fast Entry</button>':'')
+    +(x.hasSpec?'<button class="btn" id="evt-btn-sr" onclick="showEvtForm(\'sr\',\''+id+'\')">'+'&#9878; Special Rebalance</button>':'')
     +'<button class="btn" id="evt-btn-ah" onclick="showEvtForm(\'ah\',\''+id+'\')">&#128231; Ad-hoc Request</button>'
     +'</div></div>'
     +'<div id="evt-form-area" style="margin-bottom:18px"></div>'
@@ -1075,7 +1212,7 @@ function showEvtForm(type,id){
       +'<div style="padding:9px 12px;background:var(--purl)"><strong style="color:var(--purt)">&#128231; Ad-hoc Request</strong></div>'
       +'<div style="padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Request date <span class="req">*</span></label><input class="finp" type="date" id="ah-d" value="'+today+'"></div>'
-      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Type</label><select class="fsel" id="ah-t"><option>Ad-hoc rebalance</option><option>Ad-hoc reconstitution</option><option>Weight change</option><option>Inclusion request</option><option>Exclusion request</option><option>Other</option></select></div>'
+      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Type</label><select class="fsel" id="ah-t"><option>Reconstitution</option><option>Rebalance</option><option>Review</option><option>IPO Review</option><option>CG Review</option><option>CA Review</option><option>CE Review</option><option>Theme Review</option><option>Weight change</option><option>Inclusion request</option><option>Exclusion request</option><option>Other</option></select></div>'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Client contact</label><input class="finp" id="ah-c" placeholder="Name, company"></div>'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Target effective date</label><input class="finp" type="date" id="ah-e"></div>'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Status</label><select class="fsel" id="ah-st"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Completed</option></select></div>'
@@ -1271,7 +1408,7 @@ function filterICAL(){icalQ=(document.getElementById('ical-q')?.value||'').toLow
 function setIF(f,el){icalFilter=f;document.querySelectorAll('#ical-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');filterICAL();}
 function renderICAL(){
   const p=getPerms();
-  const pool=(p.vO&&p.vR)?ICAL:(p.vR?ICAL.filter(x=>x.rmb==='Review'):ICAL.filter(x=>x.rmb==='Operations'));
+  const pool=(p.eR&&p.eO)?ICAL:(p.eR?ICAL.filter(x=>x.rmb==='Review'):ICAL.filter(x=>x.rmb==='Operations'));
   const data=pool.filter(x=>{
     const lf=icalFilter==='all'||x.label===icalFilter;
     const qf=!icalQ||x.name.toLowerCase().includes(icalQ)||(x.tickers||[]).some(t=>t.ticker.toLowerCase().includes(icalQ));
@@ -1418,7 +1555,9 @@ function renderWzRev(){
 }
 function saveIdx(){
   if(!selICAL){toast('No index selected','err');return;}
-  const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL)};
+  const hasFast=document.querySelector('#blk-fast input[type=checkbox]')?.checked||false;
+  const hasSpec=document.querySelector('#blk-spec input[type=checkbox]')?.checked||false;
+  const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL),hasFast,hasSpec};
   REPO.unshift(entry);getAsgn(entry.id,entry.rmb);
   renderRepo();toast(`"${selICAL.name}" added to repository`,'ok');
   showView('v-repo',document.querySelectorAll('.sbi')[0]);
@@ -1428,7 +1567,28 @@ function saveIdx(){
 const AN_COLS=['#4B35CC','#166B0F','#8A5100','#A81919','#0B7160','#1756A3','#9D174D','#0C4A6E','#92400E'];
 function renderAssign(){
   const q=(document.getElementById('assign-q')?.value||'').toLowerCase();
-  const data=REPO.filter(x=>x.rmb==='Review'&&(!q||x.name.toLowerCase().includes(q)));
+  const dateType=document.getElementById('assign-date-type')?.value||'';
+  const dateFrom=document.getElementById('assign-date-from')?.value||'';
+  const dateTo=document.getElementById('assign-date-to')?.value||'';
+  // Show date filter panel only for managers
+  const dfPanel=document.getElementById('assign-date-filter');
+  if(dfPanel) dfPanel.style.display=getPerms().asgn?'block':'none';
+  const data=REPO.filter(function(x){
+    if(x.rmb!=='Review') return false;
+    if(q&&!x.name.toLowerCase().includes(q)) return false;
+    if(dateType||dateFrom||dateTo){
+      var keys=dateType?[dateType]:['effective','selection','weightFreeze','clientComm'];
+      var matches=keys.some(function(k){
+        var d=x.dates&&x.dates[k];
+        if(!d||d==='—') return false;
+        if(dateFrom&&d<dateFrom) return false;
+        if(dateTo&&d>dateTo) return false;
+        return true;
+      });
+      if(!matches) return false;
+    }
+    return true;
+  });
   // Workload
   const wl={};REV_ANALYSTS.forEach(a=>{wl[a.id]={a,p:0,pr:0};});
   REPO.filter(x=>x.rmb==='Review').forEach(x=>{const ag=getAsgn(x.id,x.rmb);if(ag.analyst&&wl[ag.analyst])wl[ag.analyst].p++;if(ag.peer&&wl[ag.peer])wl[ag.peer].pr++;});
@@ -1448,6 +1608,12 @@ function renderAssign(){
     return`<tr><td style="max-width:0"><span style="font-size:12px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.name}</span></td><td>${labelTag(x.label)}</td><td><div class="rt-pills">${rtPills(x.reviewTypes)}</div></td><td>${mkSel('analyst',ag.analyst)}</td><td>${peerCell}</td><td>${sp(x.stage||'To Start')}</td></tr>`;
   }).join('');
   document.getElementById('assign-badge').textContent=REPO.filter(x=>x.rmb==='Review').length;
+}
+function clearAssignDateFilter(){
+  ['assign-date-type','assign-date-from','assign-date-to'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  renderAssign();
 }
 function updateAsgn(id,slot,uid){if(!ASGN[id])ASGN[id]={analyst:null,peer:null};ASGN[id][slot]=uid;renderAssign();renderRepo();toast('Assignment updated','ok');}
 function autoAssign(){let c=0;REPO.filter(x=>x.rmb==='Review').forEach(x=>{const p=REV_ANALYSTS;ASGN[x.id]={analyst:p[c%p.length].id,peer:p[(c+1)%p.length].id};c+=2;});renderAssign();renderRepo();toast('All Review indices auto-assigned','ok');}
@@ -1587,6 +1753,7 @@ function botOverride(i){
 
 /* ── RBAC ── */
 function renderRBAC(){
+  const p=getPerms();
   document.getElementById('rbac-body').innerHTML=`
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:9px">Switch active user</div>
     <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
@@ -1596,12 +1763,70 @@ function renderRBAC(){
         ${CU.id===u.id?'<span style="font-size:10px;color:var(--ink);font-weight:700">● Active</span>':''}
       </div>`).join('')}
     </div>
-    <div style="padding:11px 13px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r8)">
-      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:8px">Access rules</div>
-      <div style="font-size:11px;line-height:1.9">
-        <div>🔴 <b>Neha (L2)</b> — view + edit all indices (both Review &amp; Ops)</div>
-        <div>🟡 <b>Ops team</b> — view all; edit Ops-managed only</div>
-        <div>🔵 <b>Review team</b> — view + edit Review-managed only; Ops-managed <strong>invisible</strong></div>
+
+    <!-- RMB Field Spec -->
+    <div style="border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden;margin-bottom:12px">
+      <div style="padding:9px 13px;background:var(--c1);border-bottom:1px solid var(--b1)">
+        <div style="font-size:11px;font-weight:700;color:var(--t0)">Field: Review Managed By <span style="font-size:9px;font-weight:500;color:var(--t3);margin-left:6px">sourced from ICAL Client Repository</span></div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">Controls access and ownership of each index within the Review Tool</div>
+      </div>
+      <div style="padding:10px 13px;display:flex;gap:8px">
+        <div style="flex:1;padding:7px 10px;border-radius:var(--r6);border:1px solid var(--b1);background:var(--inkl);text-align:center">
+          <div style="font-size:9px;font-weight:700;color:var(--inkt);text-transform:uppercase;letter-spacing:.5px">Value</div>
+          <div style="font-size:13px;font-weight:800;color:var(--inkt);margin-top:2px">Review</div>
+        </div>
+        <div style="flex:1;padding:7px 10px;border-radius:var(--r6);border:1px solid var(--b1);background:var(--warnl);text-align:center">
+          <div style="font-size:9px;font-weight:700;color:var(--warnt);text-transform:uppercase;letter-spacing:.5px">Value</div>
+          <div style="font-size:13px;font-weight:800;color:var(--warnt);margin-top:2px">OPS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Behaviour Table -->
+    <div style="border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden;margin-bottom:12px">
+      <div style="padding:9px 13px;background:var(--c1);border-bottom:1px solid var(--b1)">
+        <div style="font-size:11px;font-weight:700;color:var(--t0)">Role behaviour</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:var(--c1)">
+            <th style="padding:7px 12px;text-align:left;font-weight:700;color:var(--t2);font-size:10px;border-bottom:1px solid var(--b1)">Team / Role</th>
+            <th style="padding:7px 12px;text-align:center;font-weight:700;color:var(--inkt);font-size:10px;border-bottom:1px solid var(--b1);background:var(--inkl)">RMB = Review</th>
+            <th style="padding:7px 12px;text-align:center;font-weight:700;color:var(--warnt);font-size:10px;border-bottom:1px solid var(--b1);background:var(--warnl)">RMB = OPS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--b0)">
+            <td style="padding:8px 12px;font-weight:600">Neha (L2 Manager)</td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--okt);font-weight:700">View + Edit</span></td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--okt);font-weight:700">View + Edit</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--b0)">
+            <td style="padding:8px 12px;font-weight:600">Review team<div style="font-size:9px;font-weight:400;color:var(--t3)">Manager + Analysts</div></td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--okt);font-weight:700">View + Edit</span></td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--errt);font-weight:700">No access</span></td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;font-weight:600">OPS team<div style="font-size:9px;font-weight:400;color:var(--t3)">Manager + Analysts</div></td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--warnt);font-weight:700">View only</span></td>
+            <td style="padding:8px 12px;text-align:center"><span style="color:var(--okt);font-weight:700">View + Edit</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Active user's current access -->
+    <div style="padding:10px 13px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r8)">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:7px">Current session — ${CU.name}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="padding:7px 10px;border-radius:var(--r6);border:1px solid var(--b1);background:var(--c0)">
+          <div style="font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase;margin-bottom:3px">RMB = Review</div>
+          <div style="font-size:12px;font-weight:700;color:${p.eR?'var(--okt)':p.vR?'var(--warnt)':'var(--errt)'}">${p.eR?'View + Edit':p.vR?'View only':'No access'}</div>
+        </div>
+        <div style="padding:7px 10px;border-radius:var(--r6);border:1px solid var(--b1);background:var(--c0)">
+          <div style="font-size:9px;color:var(--t3);font-weight:600;text-transform:uppercase;margin-bottom:3px">RMB = OPS</div>
+          <div style="font-size:12px;font-weight:700;color:${p.eO?'var(--okt)':p.vO?'var(--warnt)':'var(--errt)'}">${p.eO?'View + Edit':p.vO?'View only':'No access'}</div>
+        </div>
       </div>
     </div>`;
 }
@@ -1686,6 +1911,460 @@ function useExtractedSTs(btn){
   });
   switchSTMode(true);toast('Sub-themes imported','ok');
 }
+/* ── CALENDAR VIEW ── */
+var calYear=new Date().getFullYear();
+var calMonth=new Date().getMonth(); // 0-based
+var calActiveFilters={effective:true,selection:true,weightFreeze:true,clientComm:true};
+var CAL_CFG=[
+  {key:'effective',   lbl:'Effective',     col:'#166B0F',bg:'#E6F3E2'},
+  {key:'selection',   lbl:'Selection',     col:'#4B35CC',bg:'#EDE9FF'},
+  {key:'weightFreeze',lbl:'Wt. Freeze',    col:'#0B7160',bg:'#D1FAF0'},
+  {key:'clientComm',  lbl:'Client Comm',   col:'#A81919',bg:'#FCEAEA'},
+];
+
+function toggleCalFilter(key,el){
+  calActiveFilters[key]=!calActiveFilters[key];
+  var cfg=CAL_CFG.find(function(c){return c.key===key;});
+  if(calActiveFilters[key]){
+    el.style.background=cfg.col; el.style.borderColor=cfg.col; el.style.color='#fff';
+  } else {
+    el.style.background=''; el.style.borderColor=''; el.style.color='';
+    el.classList.remove('on');
+  }
+  renderCalGrid();
+}
+function shiftCal(d){
+  calMonth+=d;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalGrid();
+}
+function calToday(){
+  var now=new Date();
+  calYear=now.getFullYear(); calMonth=now.getMonth();
+  renderCalGrid();
+}
+
+function renderCal(){
+  renderCalGrid();
+}
+
+function renderCalGrid(){
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-lbl').textContent=MONTHS[calMonth]+' '+calYear;
+
+  // Build event map: 'YYYY-MM-DD' -> [{xid,name,dateKey,col,bg}]
+  var evtMap={};
+  var visRepo=REPO.filter(function(x){return canView(x.rmb);});
+  visRepo.forEach(function(x){
+    if(!x.dates) return;
+    CAL_CFG.forEach(function(cfg){
+      if(!calActiveFilters[cfg.key]) return;
+      var dStr=x.dates[cfg.key];
+      if(!dStr||dStr==='—') return;
+      // Normalise to YYYY-MM-DD
+      var d=dStr.length===10?dStr:null;
+      if(!d) return;
+      var parts=d.split('-');
+      if(parts.length!==3) return;
+      var yr=parseInt(parts[0]),mo=parseInt(parts[1])-1;
+      if(yr!==calYear||mo!==calMonth) return;
+      if(!evtMap[d]) evtMap[d]=[];
+      evtMap[d].push({xid:x.id,name:x.name,dateKey:cfg.key,lbl:cfg.lbl,col:cfg.col,bg:cfg.bg});
+    });
+  });
+
+  // Build calendar cells
+  var firstDay=new Date(calYear,calMonth,1).getDay(); // 0=Sun
+  var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  var daysInPrev=new Date(calYear,calMonth,0).getDate();
+  var todayStr=new Date().toISOString().slice(0,10);
+
+  var grid=document.getElementById('cal-grid');
+  // Remove all cells (keep the 7 header divs)
+  var headers=Array.from(grid.children).slice(0,7);
+  grid.innerHTML='';
+  headers.forEach(function(h){grid.appendChild(h);});
+
+  var totalCells=Math.ceil((firstDay+daysInMonth)/7)*7;
+  for(var i=0;i<totalCells;i++){
+    var cell=document.createElement('div');
+    cell.className='cal-cell';
+    var day,dateStr,isOther=false;
+    if(i<firstDay){
+      day=daysInPrev-firstDay+i+1;
+      var pm=calMonth===0?11:calMonth-1;
+      var py=calMonth===0?calYear-1:calYear;
+      dateStr=py+'-'+String(pm+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      isOther=true;
+    } else if(i>=firstDay+daysInMonth){
+      day=i-firstDay-daysInMonth+1;
+      var nm=calMonth===11?0:calMonth+1;
+      var ny=calMonth===11?calYear+1:calYear;
+      dateStr=ny+'-'+String(nm+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      isOther=true;
+    } else {
+      day=i-firstDay+1;
+      dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    }
+    if(isOther) cell.classList.add('other-month');
+    if(dateStr===todayStr) cell.classList.add('today');
+
+    var numEl=document.createElement('div');
+    numEl.className='cal-date-num';
+    numEl.textContent=day;
+    cell.appendChild(numEl);
+
+    // Add event pills
+    var evts=evtMap[dateStr]||[];
+    var maxShow=3;
+    evts.slice(0,maxShow).forEach(function(e){
+      var pill=document.createElement('div');
+      pill.className='cal-evt';
+      pill.style.background=e.bg;
+      pill.style.color=e.col;
+      pill.title=e.name+' — '+e.lbl;
+      // Short index name: first 2-3 words
+      var shortName=e.name.split(' ').slice(0,3).join(' ');
+      pill.textContent=shortName;
+      pill.onclick=(function(xid){return function(ev){ev.stopPropagation();openDet(xid);};})(e.xid);
+      cell.appendChild(pill);
+    });
+    if(evts.length>maxShow){
+      var more=document.createElement('div');
+      more.className='cal-more';
+      more.textContent='+'+(evts.length-maxShow)+' more';
+      more.onclick=(function(evList,ds){return function(ev){ev.stopPropagation();showCalDayPopover(evList,ds,ev);};})( evts.slice(maxShow),dateStr);
+      cell.appendChild(more);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function showCalDayPopover(evts,dateStr,ev){
+  var existing=document.getElementById('cal-day-pop');
+  if(existing)existing.remove();
+  var pop=document.createElement('div');
+  pop.id='cal-day-pop';
+  Object.assign(pop.style,{position:'fixed',zIndex:'400',background:'var(--c0)',border:'1px solid var(--b1)',borderRadius:'var(--r8)',boxShadow:'var(--sh2)',padding:'10px',minWidth:'220px',maxWidth:'280px'});
+  var rect=ev.target.getBoundingClientRect();
+  pop.style.top=Math.min(rect.bottom+4,window.innerHeight-200)+'px';
+  pop.style.left=Math.min(rect.left,window.innerWidth-290)+'px';
+  var title=document.createElement('div');
+  title.style.cssText='font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px';
+  title.textContent=dateStr;
+  pop.appendChild(title);
+  evts.forEach(function(e){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:5px;cursor:pointer;margin-bottom:3px';
+    row.onmouseover=function(){row.style.background='var(--c1)';};
+    row.onmouseout=function(){row.style.background='';};
+    row.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+e.col+';flex-shrink:0"></span>'
+      +'<span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e.name+'</span>'
+      +'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:'+e.bg+';color:'+e.col+'">'+e.lbl+'</span>';
+    row.onclick=(function(xid){return function(){pop.remove();openDet(xid);};})(e.xid);
+    pop.appendChild(row);
+  });
+  document.body.appendChild(pop);
+  setTimeout(function(){document.addEventListener('click',function h(){pop.remove();document.removeEventListener('click',h);});},0);
+}
+
+/* ══════════════════════════════════════
+   INDEX CONFIGURATION MODULE
+══════════════════════════════════════ */
+var cfgCurrentId=null;
+
+function renderCfgList(){
+  const q=(document.getElementById('cfg-q')?.value||'').toLowerCase();
+  const p=getPerms();
+  // Managers see indices they can edit
+  const data=REPO.filter(function(x){
+    if(!canEdit(x.rmb)) return false;
+    if(q&&!x.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const list=document.getElementById('cfg-index-list');
+  if(!list) return;
+  if(!data.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--t3)">No configurable indices found.</div>';
+    return;
+  }
+  list.innerHTML=data.map(function(x){
+    var isOn=cfgCurrentId===x.id;
+    return '<div class="cfg-list-row'+(isOn?' on':'')+'" onclick="openCfg(\''+x.id+'\')" data-cfg-id="'+x.id+'">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:11px;font-weight:600;'+(isOn?'color:var(--inkt)':'')+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x.name+'</div>'
+      +'<div style="font-size:10px;color:'+(isOn?'var(--inkt)':'var(--t2)')+'margin-top:2px">'+labelTag(x.label)+'</div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;'+(isOn?'color:var(--inkt)':'color:var(--t3)')+'">'+sp(x.stage||'To Start')+'</div>'
+      +'</div>';
+  }).join('');
+  // Update ph sub
+  var sub=document.getElementById('cfg-ph-sub');
+  if(sub&&!cfgCurrentId) sub.textContent=data.length+' configurable indices';
+}
+
+function openCfg(id){
+  cfgCurrentId=id;
+  // Highlight in list
+  document.querySelectorAll('#cfg-index-list .cfg-list-row').forEach(function(r){
+    var on=r.dataset.cfgId===id;
+    r.classList.toggle('on',on);
+    r.querySelectorAll('div').forEach(function(d){
+      if(on) d.style.color='var(--inkt)';
+      else d.style.removeProperty('color');
+    });
+  });
+  renderCfgPanel(id);
+}
+
+function renderCfgPanel(id){
+  const x=REPO.find(function(r){return r.id===id;});
+  if(!x) return;
+  const panel=document.getElementById('cfg-panel');
+  if(!panel) return;
+  const d=x.dates||{};
+  const FREQ_OPTS=['Annual','Semi-Annual','Quarterly','Monthly'];
+  const EVT_TYPES=['Reconstitution','Rebalance','Review','IPO Review','CG Review','CA Review','CE Review','Theme Review'];
+  const DATE_FIELDS2=[
+    {k:'effective',   lbl:'Effective date',      col:'#166B0F'},
+    {k:'selection',   lbl:'Selection date',       col:'#4B35CC'},
+    {k:'weightFreeze',lbl:'Weight freeze date',   col:'#0B7160'},
+    {k:'pubAnnounce', lbl:'Public announcement',  col:'#8A5100'},
+    {k:'clientComm',  lbl:'Client communication', col:'#A81919'},
+    {k:'qc',          lbl:'Quality control',      col:'#1756A3'},
+  ];
+
+  // Derive current freq from monthly schedule
+  var schedMonths=Object.keys(x.monthly||{});
+  var detectedFreq=schedMonths.length===12?'Monthly':schedMonths.length===4?'Quarterly':schedMonths.length===2?'Semi-Annual':schedMonths.length===1?'Annual':'';
+
+  panel.innerHTML=
+    // ── Header ──
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'
+    +'<div>'
+    +'<div style="font-size:15px;font-weight:800;color:var(--t0);margin-bottom:3px">'+x.name+'</div>'
+    +'<div style="display:flex;gap:6px;align-items:center">'+labelTag(x.label)+'<span style="font-size:11px;color:var(--t2)">'+x.agent+'</span>'+(x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">OPS</span>')+'</div>'
+    +'</div>'
+    +'</div>'
+
+    // ── SECTION 1: Schedule ──
+    +'<div class="cfg-section">&#128197;&nbsp; Schedule configuration</div>'
+
+    // Frequency
+    +'<div class="cfg-field">'
+    +'<div class="cfg-label">Frequency</div>'
+    +'<div class="cfg-ctrl">'
+    +'<select class="fsel" id="cfg-freq" onchange="cfgOnFreqChange(\''+id+'\')">'
+    +'<option value="">— select —</option>'
+    +FREQ_OPTS.map(function(f){return'<option'+(f===detectedFreq?' selected':'')+'>'+f+'</option>';}).join('')
+    +'</select>'
+    +'<div class="cfg-hint">Current: '+(detectedFreq||'Not set')+'</div>'
+    +'</div></div>'
+
+    // Active months
+    +'<div class="cfg-field" id="cfg-months-row" style="'+(detectedFreq&&detectedFreq!=='Monthly'?'':'display:none')+'">'
+    +'<div class="cfg-label">Active months</div>'
+    +'<div class="cfg-ctrl">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px" id="cfg-months-grid">'
+    +['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map(function(m){
+      var on=schedMonths.includes(m);
+      return'<div class="mb-btn'+(on?' on':'')+'" onclick="cfgToggleMonth(this,\''+m+'\')" style="cursor:pointer">'+m+'</div>';
+    }).join('')
+    +'</div>'
+    +'<div class="cfg-hint" id="cfg-months-hint">Click months to toggle. Selected: '+schedMonths.join(', ')+'</div>'
+    +'</div></div>'
+
+    // Review types
+    +'<div class="cfg-field">'
+    +'<div class="cfg-label">Event types</div>'
+    +'<div class="cfg-ctrl">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px" id="cfg-evt-types">'
+    +EVT_TYPES.map(function(t){
+      var on=(x.reviewTypes||[]).includes(t);
+      return'<div class="mb-btn'+(on?' on':'')+'" style="height:auto;padding:4px 10px;cursor:pointer;font-size:10px" onclick="this.classList.toggle(\'on\')">'+t+'</div>';
+    }).join('')
+    +'</div>'
+    +'<div class="cfg-hint">Event types included in the schedule</div>'
+    +'</div></div>'
+
+    // ── SECTION 2: Key dates ──
+    +'<div class="cfg-section" style="margin-top:16px">&#128197;&nbsp; Key dates</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">'
+    +DATE_FIELDS2.map(function(f){
+      return'<div style="padding:8px 10px;border:1px solid var(--b1);border-left:3px solid '+f.col+';border-radius:var(--r6)">'
+        +'<label class="flbl" style="font-size:9px;color:var(--t3)">'+f.lbl+'</label>'
+        +'<input type="date" class="finp" id="cfg-date-'+f.k+'" value="'+(d[f.k]||'')+'" style="font-family:var(--fm);font-size:12px">'
+        +'</div>';
+    }).join('')
+    +'</div>'
+
+    // ── SECTION 3: Special events ──
+    +'<div class="cfg-section" style="margin-top:16px">&#9889;&nbsp; Special event configuration</div>'
+
+    // Fast Entry
+    +'<div style="border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:8px;overflow:hidden">'
+    +'<div style="padding:9px 12px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="display:flex;align-items:center;gap:8px"><label class="cb-row" style="margin-bottom:0"><input type="checkbox" id="cfg-has-fast"'+(x.hasFast?' checked':'')+' onchange="cfgToggleFastSpec(\'fast\',this.checked)"><span style="font-size:12px;font-weight:700">Fast Entry</span></label></div>'
+    +'<span class="opt-lbl">optional</span>'
+    +'</div>'
+    +'<div id="cfg-fast-body" style="padding:12px;'+(x.hasFast?'':'display:none')+'">'
+    +'<div class="fg2" style="gap:8px">'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Min. constituent threshold</label><input class="finp" type="number" id="cfg-fast-threshold" value="'+(x.fastThreshold||10)+'" min="1" max="100"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Selection source</label><select class="fsel" id="cfg-fast-source"><option value="eligible"'+(x.fastSource!=='pool'?' selected':'')+'>Eligible list from last reconstitution</option><option value="pool"'+(x.fastSource==='pool'?' selected':'')+'>Replacement pool / pre-approved list</option></select></div>'
+    +'</div>'
+    +'<div class="fg2" style="gap:8px;margin-top:8px">'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Announcement (T+N biz days)</label><input class="finp" type="number" id="cfg-fe-ann" value="'+(x.feAnn||0)+'" min="0" max="30"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Client comm (T+N biz days)</label><input class="finp" type="number" id="cfg-fe-comm" value="'+(x.feComm||0)+'" min="0" max="30"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Effective (T+N biz days)</label><input class="finp" type="number" id="cfg-fe-eff" value="'+(x.feEff||0)+'" min="0" max="30"></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+
+    // Special Rebalance
+    +'<div style="border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:8px;overflow:hidden">'
+    +'<div style="padding:9px 12px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="display:flex;align-items:center;gap:8px"><label class="cb-row" style="margin-bottom:0"><input type="checkbox" id="cfg-has-spec"'+(x.hasSpec?' checked':'')+' onchange="cfgToggleFastSpec(\'spec\',this.checked)"><span style="font-size:12px;font-weight:700">Special Rebalance</span></label></div>'
+    +'<span class="opt-lbl">optional</span>'
+    +'</div>'
+    +'<div id="cfg-spec-body" style="padding:12px;'+(x.hasSpec?'':'display:none')+'">'
+    +'<div class="fg2" style="gap:8px">'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Weight cap trigger (%)</label><input class="finp" type="number" id="cfg-spec-cap" value="'+(x.specCap||24)+'" step=".5"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Target weight after cap (%)</label><input class="finp" type="number" id="cfg-spec-target" value="'+(x.specTarget||20)+'" step=".5"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Adjustment method</label><select class="fsel" id="cfg-spec-method"><option'+(x.specMethod!=='keep'?' selected':'')+'>Pro-rata</option><option value="keep"'+(x.specMethod==='keep'?' selected':'')+'>Keep unchanged</option></select></div>'
+    +'</div>'
+    +'<div class="fg2" style="gap:8px;margin-top:8px">'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Data / Rebalance (T+N biz days)</label><input class="finp" type="number" id="cfg-sr-data" value="'+(x.srData||1)+'" min="0" max="30"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Announce &amp; Client comm (T+N)</label><input class="finp" type="number" id="cfg-sr-comm" value="'+(x.srComm||1)+'" min="0" max="30"></div>'
+    +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Effective (T+N biz days)</label><input class="finp" type="number" id="cfg-sr-eff" value="'+(x.srEff||2)+'" min="0" max="30"></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+
+    // ── SECTION 4: Stage ──
+    +'<div class="cfg-section" style="margin-top:16px">&#128260;&nbsp; Stage</div>'
+    +'<div class="cfg-field" style="border:0;padding:0 0 12px">'
+    +'<div class="cfg-label">Current stage</div>'
+    +'<div class="cfg-ctrl">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px">'
+    +STAGES.map(function(s){
+      var on=s===(x.stage||'To Start');
+      return'<div style="padding:5px 12px;border-radius:20px;border:1.5px solid '+(on?'var(--ink)':'var(--b1)')+';background:'+(on?'var(--inkl)':'var(--c0)')+';color:'+(on?'var(--inkt)':'var(--t1)')+';font-size:11px;font-weight:600;cursor:pointer" onclick="cfgSetStage(\''+s+'\',this)">'+s+'</div>';
+    }).join('')
+    +'</div>'
+    +'</div></div>'
+
+    // ── Save bar ──
+    +'<div class="cfg-save-bar">'
+    +'<button class="btn btn-ghost" onclick="renderCfgPanel(\''+id+'\')">Discard</button>'
+    +'<button class="btn btn-primary" onclick="saveCfg(\''+id+'\')">&#10003; Save changes</button>'
+    +'</div>';
+
+  // Update ph
+  var sub=document.getElementById('cfg-ph-sub');
+  if(sub) sub.textContent='Editing: '+x.name;
+  var acts=document.getElementById('cfg-ph-acts');
+  if(acts) acts.innerHTML='<button class="btn btn-ghost" onclick="openDet(\''+id+'\')">&#128196; Full detail</button>';
+}
+
+function cfgOnFreqChange(id){
+  var f=document.getElementById('cfg-freq')?.value;
+  var row=document.getElementById('cfg-months-row');
+  if(row) row.style.display=(f&&f!=='Monthly')?'':'none';
+}
+function cfgToggleMonth(el,m){
+  el.classList.toggle('on');
+  var sel=Array.from(document.querySelectorAll('#cfg-months-grid .mb-btn.on')).map(function(b){return b.textContent;});
+  var h=document.getElementById('cfg-months-hint');
+  if(h) h.textContent='Selected: '+(sel.length?sel.join(', '):'none');
+}
+function cfgToggleFastSpec(type,on){
+  var body=document.getElementById('cfg-'+type+'-body');
+  if(body) body.style.display=on?'':'none';
+}
+function cfgSetStage(s,el){
+  el.closest('.cfg-ctrl').querySelectorAll('div').forEach(function(d){
+    var isOn=d.textContent===s;
+    d.style.borderColor=isOn?'var(--ink)':'var(--b1)';
+    d.style.background=isOn?'var(--inkl)':'var(--c0)';
+    d.style.color=isOn?'var(--inkt)':'var(--t1)';
+  });
+  el.dataset.selected=s;
+}
+
+function saveCfg(id){
+  var x=REPO.find(function(r){return r.id===id;});
+  if(!x){toast('Index not found','err');return;}
+  const p=getPerms();
+  if(!canEdit(x.rmb)){toast('No edit permission','err');return;}
+
+  // Schedule: frequency + months → rebuild monthly object
+  var freq=document.getElementById('cfg-freq')?.value;
+  if(freq){
+    var selMonths=Array.from(document.querySelectorAll('#cfg-months-grid .mb-btn.on')).map(function(b){return b.textContent;});
+    if(freq==='Monthly'){
+      // all 12 months
+      var allM={Jan:'Reconstitution',Feb:'Reconstitution',Mar:'Reconstitution',Apr:'Reconstitution',May:'Reconstitution',Jun:'Reconstitution',Jul:'Reconstitution',Aug:'Reconstitution',Sep:'Reconstitution',Oct:'Reconstitution',Nov:'Reconstitution',Dec:'Reconstitution'};
+      x.monthly=allM;
+    } else if(selMonths.length){
+      var newM={};
+      selMonths.forEach(function(m){ newM[m]=x.monthly&&x.monthly[m]?x.monthly[m]:'Reconstitution'; });
+      x.monthly=newM;
+    }
+  }
+
+  // Review types
+  var evtTypeBtns=document.querySelectorAll('#cfg-evt-types .mb-btn.on');
+  if(evtTypeBtns.length){
+    x.reviewTypes=Array.from(evtTypeBtns).map(function(b){return b.textContent;});
+  }
+
+  // Dates
+  var DATE_KEYS=['effective','selection','weightFreeze','pubAnnounce','clientComm','qc'];
+  DATE_KEYS.forEach(function(k){
+    var el=document.getElementById('cfg-date-'+k);
+    if(el&&el.value) x.dates[k]=el.value;
+  });
+
+  // Fast Entry
+  var hasFast=document.getElementById('cfg-has-fast')?.checked||false;
+  x.hasFast=hasFast;
+  if(hasFast){
+    x.fastThreshold=parseInt(document.getElementById('cfg-fast-threshold')?.value)||10;
+    x.fastSource=document.getElementById('cfg-fast-source')?.value||'eligible';
+    x.feAnn=parseInt(document.getElementById('cfg-fe-ann')?.value)||0;
+    x.feComm=parseInt(document.getElementById('cfg-fe-comm')?.value)||0;
+    x.feEff=parseInt(document.getElementById('cfg-fe-eff')?.value)||0;
+  }
+
+  // Special Rebalance
+  var hasSpec=document.getElementById('cfg-has-spec')?.checked||false;
+  x.hasSpec=hasSpec;
+  if(hasSpec){
+    x.specCap=parseFloat(document.getElementById('cfg-spec-cap')?.value)||24;
+    x.specTarget=parseFloat(document.getElementById('cfg-spec-target')?.value)||20;
+    x.specMethod=document.getElementById('cfg-spec-method')?.value||'Pro-rata';
+    x.srData=parseInt(document.getElementById('cfg-sr-data')?.value)||1;
+    x.srComm=parseInt(document.getElementById('cfg-sr-comm')?.value)||1;
+    x.srEff=parseInt(document.getElementById('cfg-sr-eff')?.value)||2;
+  }
+
+  // Stage — find which pill is selected
+  var stagePills=document.querySelectorAll('.cfg-ctrl div[data-selected]');
+  if(stagePills.length) x.stage=stagePills[0].dataset.selected;
+  // Fallback: find the highlighted pill
+  else{
+    var stageCtrl=document.querySelector('.cfg-ctrl');
+    // rely on the visual state
+  }
+
+  renderRepo();
+  renderAssign();
+  renderCfgList();
+  renderCfgPanel(id);
+  toast('Configuration saved for '+x.name.split(' ').slice(0,3).join(' ')+'…','ok');
+}
+
 /* ── INIT ── */
 seedRepo();renderRepo();applyDL();
 </script></body></html>
