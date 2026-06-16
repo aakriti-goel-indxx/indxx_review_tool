@@ -125,6 +125,8 @@ tr:hover .act-btns{opacity:1}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--b1);border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden}
 .cal-day-hdr{background:var(--c1);text-align:center;font-size:10px;font-weight:700;color:var(--t2);padding:6px 0;text-transform:uppercase;letter-spacing:.5px}
 .cal-cell{background:var(--c0);min-height:90px;padding:5px;position:relative;vertical-align:top}
+.cal-grid.week-mode .cal-cell{min-height:340px}
+.cal-date-sub{font-size:9px;color:var(--t3);margin-bottom:4px}
 .cal-cell.other-month{background:var(--c1)}.cal-cell.today{background:var(--inkl)}
 .cal-date-num{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:3px}
 .cal-cell.today .cal-date-num{color:var(--inkt)}
@@ -133,6 +135,7 @@ tr:hover .act-btns{opacity:1}
 .cal-more{font-size:9px;color:var(--t3);padding:2px 4px;cursor:pointer}
 .cal-more:hover{color:var(--ink)}
 .cal-filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.cal-scope-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
 .cal-filter-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--b1);background:var(--c0);cursor:pointer;font-size:11px;font-weight:600;color:var(--t2);transition:all .15s;user-select:none}
 .cal-filter-pill:hover{border-color:var(--ink);color:var(--ink)}
 .cal-filter-pill.on{border-color:transparent;color:#fff}
@@ -148,6 +151,10 @@ tr:hover .act-btns{opacity:1}
 .cfg-hint{font-size:10px;color:var(--t2);margin-top:3px}
 .cfg-save-bar{position:sticky;bottom:0;background:var(--c0);border-top:1px solid var(--b1);padding:10px 16px;display:flex;gap:8px;justify-content:flex-end;margin:-16px -16px 0}
 .cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.cal-view-toggle{display:flex;border:1px solid var(--b1);border-radius:20px;overflow:hidden;flex-shrink:0;margin-right:6px}
+.cal-view-btn{padding:5px 13px;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;background:var(--c0);transition:all .15s;user-select:none}
+.cal-view-btn.on{background:var(--ink);color:#fff}
+.cal-view-btn:not(.on):hover{background:var(--c1)}
 .cal-nav-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--b1);background:var(--c0);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .cal-nav-btn:hover{background:var(--c1);border-color:var(--ink)}
 .cal-month-lbl{font-size:15px;font-weight:800;color:var(--t0);flex:1}
@@ -243,6 +250,15 @@ tr:hover .act-btns{opacity:1}
 .rpill{font-size:10px;font-weight:600;color:var(--inkt);background:var(--inkl);border-radius:20px;padding:2px 8px;margin-left:4px}
 .rreset{width:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--b1);background:var(--c1);cursor:pointer;color:var(--t3);font-size:12px;transition:all .15s}
 .rreset:hover{background:var(--errl);color:var(--errt)}
+/* RULE SUMMARY */
+.rsumm{margin-top:14px;border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden;background:var(--c0)}
+.rsumm-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);background:var(--c1);padding:8px 12px;border-bottom:1px solid var(--b1)}
+.rsumm-g{display:flex;flex-direction:column}
+.rs-i{display:flex;align-items:baseline;gap:10px;padding:8px 12px;border-bottom:1px solid var(--b0)}
+.rs-i:last-child{border-bottom:none}
+.rs-i:nth-child(even){background:var(--c1)}
+.rs-l{flex:0 0 170px;font-size:11px;font-weight:600;color:var(--t1)}
+.rs-v{font-size:11px;font-weight:600;color:var(--inkt);background:var(--inkl);border-radius:20px;padding:3px 10px;line-height:1.4}
 /* HOLIDAY TABLE */
 .hol-tbl th{padding:8px 10px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);background:var(--c1);border-bottom:1px solid var(--b1)}
 .hol-tbl td{padding:6px 10px;border-bottom:1px solid var(--b0);font-size:12px}
@@ -329,8 +345,16 @@ tr:hover .act-btns{opacity:1}
       <option value="">All review types</option>
       <option>Reconstitution</option><option>Rebalance</option><option>Review</option><option>IPO Review</option><option>Theme Review</option>
     </select>
-    <input type="date" class="finp" id="repo-dfrom" title="Live date from" onchange="filterRepo()" style="width:130px;font-size:11px">
-    <input type="date" class="finp" id="repo-dto" title="Live date to" onchange="filterRepo()" style="width:130px;font-size:11px">
+    <select class="fsel" id="repo-dtype" title="Choose which date to filter by" style="width:128px;font-size:11px" onchange="filterRepo()">
+      <option value="effective">Effective date</option>
+      <option value="selection">Selection date</option>
+      <option value="weightFreeze">Weight freeze date</option>
+      <option value="qc">Quality control date</option>
+      <option value="pubAnnounce">Public announcement</option>
+      <option value="clientComm">Client comm. date</option>
+    </select>
+    <input type="date" class="finp" id="repo-dfrom" title="From" onchange="filterRepo()" style="width:128px;font-size:11px">
+    <input type="date" class="finp" id="repo-dto" title="To" onchange="filterRepo()" style="width:128px;font-size:11px">
     <button class="btn btn-sm btn-ghost" onclick="clearRepoFilters()">&#10005; Clear</button>
   </div>
   <div class="tbl-wrap">
@@ -504,8 +528,14 @@ tr:hover .act-btns{opacity:1}
     </div>
   </div>
   <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">
-    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:10px">Review team workload</div>
-    <div id="workload-grid" class="an-grid"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleWorkload()">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">Review team workload</span>
+        <span id="workload-summary" style="font-size:11px;color:var(--t2)"></span>
+      </div>
+      <span id="workload-chevron" style="font-size:11px;color:var(--t2);transition:transform .15s">▸</span>
+    </div>
+    <div id="workload-grid" class="an-grid" style="display:none;margin-top:12px"></div>
   </div>
   <div id="assign-date-filter" style="display:none;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r8);padding:12px 14px;margin-bottom:12px">
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:10px">Filter by upcoming date</div>
@@ -549,16 +579,38 @@ tr:hover .act-btns{opacity:1}
     <div><h1>Calendar</h1><p>Upcoming index dates across the repository</p></div>
   </div>
   <div style="padding:0 24px 24px">
+    <!-- Assignment scope toggle (analysts only — managers always see all indices) -->
+    <div class="cal-scope-row" id="cal-scope-row" style="display:none">
+      <span style="font-size:11px;font-weight:700;color:var(--t2)">View:</span>
+      <div class="cal-view-toggle">
+        <div class="cal-view-btn on" data-scope="mine" onclick="setCalScope('mine',this)">Assigned to me</div>
+        <div class="cal-view-btn" data-scope="all" onclick="setCalScope('all',this)">All indices</div>
+      </div>
+    </div>
+    <!-- Analyst filter (manager/L2 only) — filters by Primary analyst OR Peer review analyst -->
+    <div class="cal-scope-row" id="cal-analyst-row" style="display:none">
+      <span style="font-size:11px;font-weight:700;color:var(--t2)">Analyst:</span>
+      <select class="fsel" id="cal-analyst-f" style="width:200px;font-size:11px" onchange="renderCalGrid()">
+        <option value="">All analysts</option>
+      </select>
+      <span style="font-size:10px;color:var(--t3)">Matches as Primary or Peer Review analyst</span>
+    </div>
     <!-- Filter pills -->
     <div class="cal-filter-bar" id="cal-filters">
       <span style="font-size:11px;font-weight:700;color:var(--t2)">Show:</span>
       <div class="cal-filter-pill on" data-key="effective"   style="background:#166B0F;border-color:#166B0F" onclick="toggleCalFilter('effective',this)"><span class="cal-filter-dot" style="background:#fff"></span>Effective</div>
       <div class="cal-filter-pill on" data-key="selection"   style="background:#4B35CC;border-color:#4B35CC" onclick="toggleCalFilter('selection',this)"><span class="cal-filter-dot" style="background:#fff"></span>Selection</div>
       <div class="cal-filter-pill on" data-key="weightFreeze" style="background:#0B7160;border-color:#0B7160" onclick="toggleCalFilter('weightFreeze',this)"><span class="cal-filter-dot" style="background:#fff"></span>Weight Freeze</div>
+      <div class="cal-filter-pill on" data-key="qc" style="background:#1756A3;border-color:#1756A3" onclick="toggleCalFilter('qc',this)"><span class="cal-filter-dot" style="background:#fff"></span>Quality Control</div>
+      <div class="cal-filter-pill on" data-key="pubAnnounce" style="background:#8A5100;border-color:#8A5100" onclick="toggleCalFilter('pubAnnounce',this)"><span class="cal-filter-dot" style="background:#fff"></span>Public Announce</div>
       <div class="cal-filter-pill on" data-key="clientComm"  style="background:#A81919;border-color:#A81919" onclick="toggleCalFilter('clientComm',this)"><span class="cal-filter-dot" style="background:#fff"></span>Client Comm</div>
     </div>
-    <!-- Month nav -->
+    <!-- View mode + nav -->
     <div class="cal-nav">
+      <div class="cal-view-toggle" id="cal-view-toggle">
+        <div class="cal-view-btn on" data-mode="month" onclick="setCalMode('month',this)">Monthly</div>
+        <div class="cal-view-btn" data-mode="week" onclick="setCalMode('week',this)">Weekly</div>
+      </div>
       <button class="cal-nav-btn" onclick="shiftCal(-1)">&#8249;</button>
       <div class="cal-month-lbl" id="cal-month-lbl"></div>
       <button class="cal-nav-btn" onclick="shiftCal(1)">&#8250;</button>
@@ -851,11 +903,16 @@ function seedRepo(){
   // Enforce RMB from label — overrides whatever the raw ICAL data says
   ICAL.forEach(x=>{ x.rmb=rmbForLabel(x.label); });
   var _si=0;
+  // Exactly 10 distinct indices get Fast Entry and/or Special Rebalance configured —
+  // a deliberate mix so the Record Event use case shows all three states:
+  // Fast Entry only, Special Rebalance only, and both configured together.
+  var FE_ONLY=[2,9,14,20];      // 4 indices: Fast Entry only
+  var SR_ONLY=[5,12,18,26];     // 4 indices: Special Rebalance only
+  var BOTH=[3,22];              // 2 indices: both configured
   ICAL.filter(x=>x.rmb==='Review').slice(0,40).forEach(x=>{
     getAsgn(x.name,x.rmb);
-    // Give some indices Fast Entry, some Special Rebalance, some both
-    var hF=[2,5,9,14,20].includes(_si);  // hasFast
-    var hS=[3,7,12,18,22].includes(_si); // hasSpec
+    var hF=FE_ONLY.includes(_si)||BOTH.includes(_si);
+    var hS=SR_ONLY.includes(_si)||BOTH.includes(_si);
     REPO.push({...x,id:x.name,stage:'To Start',dates:genDates(x),hasFast:hF,hasSpec:hS});
     _si++;
   });
@@ -863,7 +920,7 @@ function seedRepo(){
 
 /* ── REPO RENDER ── */
 let rFilter='all',rQ='',rSort={col:'name',dir:'asc'},rPage=1,expRow=null;
-const COLS=[{k:'name',l:'Index name',w:'19%',s:1},{k:'_tickers',l:'Tickers',w:'9%',s:0},{k:'label',l:'Label',w:'6%',s:1},{k:'_client',l:'Client',w:'10%',s:1},{k:'contract',l:'Contract',w:'8%',s:1},{k:'agent',l:'Agent',w:'7%',s:1},{k:'_revtype',l:'Review type',w:'9%',s:0},{k:'_effdate',l:'Next date',w:'8%',s:1},{k:'_analyst',l:'Analyst',w:'9%',s:1},{k:'_peer',l:'Peer analyst',w:'9%',s:1},{k:'stage',l:'Stage',w:'8%',s:1},{k:'_act',l:'',w:'5%',s:0}];
+const COLS=[{k:'name',l:'Index name',w:'19%',s:1},{k:'_tickers',l:'Default version',w:'9%',s:0},{k:'label',l:'Label',w:'6%',s:1},{k:'_client',l:'Client',w:'10%',s:1},{k:'contract',l:'Contract',w:'8%',s:1},{k:'agent',l:'Agent',w:'7%',s:1},{k:'_revtype',l:'Review type',w:'9%',s:0},{k:'_effdate',l:'Upcoming date',w:'8%',s:1},{k:'_analyst',l:'Analyst',w:'9%',s:1},{k:'_peer',l:'Peer analyst',w:'9%',s:1},{k:'stage',l:'Stage',w:'8%',s:1},{k:'_act',l:'',w:'5%',s:0}];
 const PAGE=20;
 
 function labelTag(l){
@@ -874,6 +931,97 @@ function labelTag(l){
 function rtPills(rts){
   const MAP={Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review','Monthly Review':'rt-review'};
   return(rts||[]).slice(0,2).map(r=>`<span class="rt-pill ${MAP[r]||'rt-other'}">${r}</span>`).join('');
+}
+
+/* ── VERSION / CLIENT-LICENSE PRESENTATION HELPERS ── */
+// Pick one default version to keep the repository at one row per index: PR > TR > NTR.
+function defaultTicker(x){
+  const ts=x.tickers||[];
+  return ts.find(t=>t.type==='PR')||ts.find(t=>t.type==='TR')||ts.find(t=>t.type==='NTR')||ts[0]||null;
+}
+function etfBadge(x){
+  const v=(x.etf||'').toLowerCase();
+  if(v==='yes')return'<span class="tag" style="background:var(--okl);color:var(--okt)" title="ETF launched">ETF</span>';
+  if(v==='not yet')return'<span class="tag" style="background:var(--warnl);color:var(--warnt)" title="ETF not yet launched">ETF pending</span>';
+  return'';
+}
+// Deterministic (not random) per-client version + license-type assignment, derived from
+// the index's own clients[] and tickers[] so it stays stable across re-renders and is
+// consistent with real-world patterns (not every client takes every version).
+function clientVersionMap(x){
+  const versions=(x.tickers||[]).map(t=>t.type); // e.g. ['PR','TR','NTR']
+  const clients=x.clients||[];
+  if(!clients.length||!versions.length)return[];
+  const LIC_TYPES=['Licensed','Data License'];
+  return clients.map(function(c,ci){
+    var h=0;for(var i=0;i<c.length;i++)h=(h*31+c.charCodeAt(i))>>>0;
+    var h2=(h+ci*101)>>>0;
+    var vCount=versions.length===1?1:1+(h2%versions.length); // 1..N versions for this client
+    // Rotate the version list by a client-specific offset, then take the first vCount
+    var offset=Math.floor(h/8)%versions.length;
+    var rotated=versions.slice(offset).concat(versions.slice(0,offset));
+    var assigned=rotated.slice(0,vCount);
+    // Keep PR/TR/NTR in natural order for display
+    var order={PR:0,TR:1,NTR:2};
+    assigned.sort(function(a,b){return(order[a]!==undefined?order[a]:9)-(order[b]!==undefined?order[b]:9);});
+    var lic=LIC_TYPES[Math.floor(h/32)%LIC_TYPES.length];
+    return{client:c,versions:assigned,licenseType:lic};
+  });
+}
+function versionPill(v){
+  const COL={PR:'#1756A3',TR:'#166B0F',NTR:'#8A5100'};
+  return'<span style="display:inline-flex;align-items:center;font-family:var(--fm);font-size:9px;font-weight:700;color:'+(COL[v]||'#666')+';background:'+(COL[v]||'#666')+'14;border:1px solid '+(COL[v]||'#666')+'33;border-radius:4px;padding:1px 6px;margin-right:3px">'+v+'</span>';
+}
+function licPill(lic){
+  const on=lic==='Licensed';
+  return'<span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:20px;background:'+(on?'var(--inkl)':'var(--c2)')+';color:'+(on?'var(--inkt)':'var(--t1)')+'">'+lic+'</span>';
+}
+function clientVersionTable(x){
+  const rows=clientVersionMap(x);
+  if(!rows.length)return'<span style="color:var(--t3);font-size:12px">No client data</span>';
+  return'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    +'<thead><tr style="background:var(--c1)">'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Client</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Version(s) taken</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">License type</th>'
+    +'</tr></thead><tbody>'
+    +rows.map(function(r){
+      return'<tr style="border-bottom:1px solid var(--b0)">'
+        +'<td style="padding:6px 10px;font-weight:600">'+r.client+'</td>'
+        +'<td style="padding:6px 10px">'+r.versions.map(versionPill).join('')+'</td>'
+        +'<td style="padding:6px 10px">'+licPill(r.licenseType)+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table>';
+}
+
+/* ── UPCOMING DATE HELPER ── */
+// All trackable date types on an index, in the order they appear in DATE_COLS, reused here
+// so the repository "Next date" column and the filter dropdown stay in sync with the detail modal.
+const REPO_DATE_TYPES=[
+  ['effective','Effective','#166B0F'],
+  ['selection','Selection','#4B35CC'],
+  ['weightFreeze','Wt. Freeze','#0B7160'],
+  ['qc','QC','#1756A3'],
+  ['pubAnnounce','Pub. Announce','#8A5100'],
+  ['clientComm','Client Comm','#A81919'],
+];
+// Returns the soonest date that is today-or-later, with its type label and color.
+// Falls back to the most recent past date if nothing is upcoming, so the column is never blank.
+function nextDateInfo(x){
+  const d=x.dates||{};
+  const today=new Date().toISOString().slice(0,10);
+  let best=null,bestPast=null;
+  REPO_DATE_TYPES.forEach(function(t){
+    var val=d[t[0]];
+    if(!val)return;
+    if(val>=today){
+      if(!best||val<best.val)best={val:val,lbl:t[1],col:t[2]};
+    } else {
+      if(!bestPast||val>bestPast.val)bestPast={val:val,lbl:t[1],col:t[2]};
+    }
+  });
+  return best||bestPast||null;
 }
 
 function visRepo(){
@@ -891,8 +1039,10 @@ function visRepo(){
     if(sf&&x.stage!==sf)return false;
     if(rf&&!x.reviewTypes.some(r=>r.includes(rf)))return false;
     var df=document.getElementById('repo-dfrom')?.value,dt=document.getElementById('repo-dto')?.value;
-    if(df&&x.liveDate&&x.liveDate<df)return false;
-    if(dt&&x.liveDate&&x.liveDate>dt)return false;
+    var dtype=document.getElementById('repo-dtype')?.value||'effective';
+    var dval=x.dates&&x.dates[dtype];
+    if(df&&dval&&dval<df)return false;
+    if(dt&&dval&&dval>dt)return false;
     return true;
   });
 }
@@ -943,7 +1093,7 @@ function renderRepo(){
   var sk=rSort.col;
   function getVal(x){
     if(sk==='_client')return(x.clients[0]||'').toLowerCase();
-    if(sk==='_effdate')return x.dates&&x.dates.effective||'';
+    if(sk==='_effdate'){var nd=nextDateInfo(x);return nd?nd.val:'';}
     if(sk==='_analyst'){var a=getAsgn(x.id,x.rmb);return anName(a.analyst).toLowerCase();}
     if(sk==='_peer'){var a=getAsgn(x.id,x.rmb);return anName(a.peer).toLowerCase();}
     var v=x[sk]||'';return typeof v==='string'?v.toLowerCase():v;
@@ -970,15 +1120,17 @@ function renderRepo(){
   tbody.innerHTML=slice.map(x=>{
     const asgn=getAsgn(x.id,x.rmb);
     const isExp=expRow===x.id;
+    const defTk=defaultTicker(x);
+    const otherCount=(x.tickers||[]).length-(defTk?1:0);
     return`<tr onclick="toggleExpand('${x.id}')" class="${isExp?'exp-parent':''}">
       <td style="max-width:0"><span style="font-size:12px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${x.name}">${x.name}</span></td>
-      <td><div class="tickers-compact">${x.tickers.slice(0,2).map(t=>`<div class="tk-row"><span class="tk-type">${t.type}</span>${t.ticker}</div>`).join('')}${x.tickers.length>2?`<div style="font-size:9px;color:var(--ink);font-weight:600">+${x.tickers.length-2}</div>`:''}</div></td>
+      <td><div class="tickers-compact">${defTk?`<div class="tk-row"><span class="tk-type">${defTk.type}</span>${defTk.ticker}</div>`:'<span style="color:var(--t3)">—</span>'}${otherCount>0?`<div style="font-size:9px;color:var(--ink);font-weight:600;cursor:pointer" title="Click row to see other versions">+${otherCount} version${otherCount>1?'s':''}</div>`:''}${etfBadge(x)?`<div style="margin-top:2px">${etfBadge(x)}</div>`:''}</div></td>
       <td>${labelTag(x.label)}</td>
       <td><div class="client-primary" title="${x.clients.join(', ')}">${x.clients[0]||'—'}</div>${x.clients.length>1?`<div class="client-more">+${x.clients.length-1} more</div>`:''}</td>
       <td style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.contract||'—'}</td>
       <td style="font-size:11px;color:var(--t1)">${x.agent||'—'}</td>
       <td><div class="rt-pills">${rtPills(x.reviewTypes)}</div></td>
-      <td style="font-size:11px;font-family:var(--fm);color:var(--t1)">${x.dates?.effective||'—'}</td>
+      <td>${(function(){var nd=nextDateInfo(x);if(!nd)return'<span style="color:var(--t3);font-size:11px">—</span>';return'<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;font-weight:700;color:'+nd.col+';background:'+nd.col+'14;border:1px solid '+nd.col+'33;border-radius:4px;padding:1px 6px;width:fit-content">'+nd.lbl+'</span><span style="font-size:11px;font-family:var(--fm);color:var(--t1)">'+nd.val+'</span></div>';})()}</td>
       <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.analyst)}<span style="font-size:11px">${anName(asgn.analyst)}</span></div></td>
       <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.peer)}<span style="font-size:11px">${anName(asgn.peer)}</span></div></td>
       <td onclick="event.stopPropagation();openStagePicker('${x.id}',event)" style="cursor:pointer">${sp(x.stage||'To Start')}</td>
@@ -1007,12 +1159,12 @@ function renderExpand(x,asgn){
   var el=document.createElement('div');
   el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">'
     +'<div style="display:flex;flex-direction:column;gap:12px">'
-    +'<div><div class="exp-s">All clients</div><div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px">'+cls+'</div></div>'
+    +'<div><div class="exp-s">Clients &amp; versions</div><div style="margin-top:4px;border:1px solid var(--b1);border-radius:var(--r6);overflow:hidden">'+clientVersionTable(x)+'</div></div>'
     +'<div><div class="exp-s">All tickers</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">'+tks+'</div></div>'
     +'<div><div class="exp-s">Details</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">'
     +'<div><div class="exp-l">Live date</div><div class="exp-v" style="font-family:var(--fm)">'+(x.liveDate||'—')+'</div></div>'
     +'<div><div class="exp-l">Calc type</div><div class="exp-v">'+(x.calcType||'—')+'</div></div>'
-    +'<div><div class="exp-l">ETF</div><div class="exp-v">'+(x.etf||'—')+'</div></div>'
+    +'<div><div class="exp-l">ETF</div><div class="exp-v">'+(x.etf||'—')+(etfBadge(x)?' '+etfBadge(x):'')+'</div></div>'
     +'<div><div class="exp-l">RMB</div>'+rmb+'</div>'
     +'<div><div class="exp-l">Contract</div><div class="exp-v" style="font-size:11px">'+(x.contract||'—')+'</div></div>'
     +'<div><div class="exp-l">Agent</div><div class="exp-v" style="font-size:11px">'+(x.agent||'—')+'</div></div>'
@@ -1075,10 +1227,10 @@ function renderDetInfo(x,pane){
       <div class="fsec" style="margin-top:0">From ICAL (read-only)</div>
       <div class="fg"><div class="exp-l">Index name</div><div style="font-size:14px;font-weight:700">${x.name}</div></div>
       <div class="fg2"><div class="fg"><div class="exp-l">Label</div>${labelTag(x.label)}</div><div class="fg"><div class="exp-l">Agent</div><strong>${x.agent}</strong></div></div>
-      <div class="fg"><div class="exp-l">Clients</div><div>${clients}</div></div>
+      <div class="fg"><div class="exp-l">Clients &amp; versions</div><div style="border:1px solid var(--b1);border-radius:var(--r6);overflow:hidden">${clientVersionTable(x)}</div></div>
       <div class="fg"><div class="exp-l">Tickers</div>${tickers}</div>
       <div class="fg2"><div class="fg"><div class="exp-l">Contract</div><div style="font-size:12px">${x.contract||'—'}</div></div><div class="fg"><div class="exp-l">Live date</div><div style="font-family:var(--fm);font-size:12px">${x.liveDate||'—'}</div></div></div>
-      <div class="fg2"><div class="fg"><div class="exp-l">Calc type</div><div style="font-size:12px">${x.calcType||'—'}</div></div><div class="fg"><div class="exp-l">ETF</div><div style="font-size:12px">${x.etf||'—'}</div></div></div>
+      <div class="fg2"><div class="fg"><div class="exp-l">Calc type</div><div style="font-size:12px">${x.calcType||'—'}</div></div><div class="fg"><div class="exp-l">ETF</div><div style="font-size:12px">${x.etf||'—'} ${etfBadge(x)}</div></div></div>
     </div>
     <div>
       <div class="fsec" style="margin-top:0">Tool-managed</div>
@@ -1094,9 +1246,28 @@ function renderDetDates(id,pane){
   const x=REPO.find(r=>r.id===id);if(!x)return;
   const d=x.dates||{};
   const DATE_COLS=[['effective','Effective date','#166B0F'],['selection','Selection date','#4B35CC'],['weightFreeze','Weight freeze','#0B7160'],['qc','Quality control','#1756A3'],['pubAnnounce','Public announce','#8A5100'],['clientComm','Client comm.','#A81919']];
+  // Only managers (and L2) may override current-cycle dates — analysts can view but not edit,
+  // even on indices they otherwise have edit rights on (e.g. recording events, changing stage).
+  const canE=canEdit(x.rmb)&&!!getPerms().asgn;
   pane.innerHTML=`<div class="det-section-title">All dates</div><div class="date-grid">${DATE_COLS.map(([k,lbl,c])=>`<div class="date-box" style="border-top-color:${c}"><div class="date-lbl">${lbl}</div><div class="date-val">${d[k]||'—'}</div><div class="date-rule">Rule: ${descRS('reconst',k)}</div></div>`).join('')}</div>
-  <div style="margin-top:14px"><div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px">Quick edit dates</div>
-  <div class="fg2">${DATE_COLS.slice(0,2).map(([k,lbl])=>`<div class="fg"><label class="flbl">${lbl}</label><input type="date" class="finp" value="${d[k]||''}" onchange="REPO.find(r=>r.id==='${id}').dates.${k}=this.value;toast('Date updated','ok')"></div>`).join('')}</div></div>`;
+  <div style="margin-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--t2)">Edit current cycle dates</div>
+      ${canE?`<button class="btn btn-sm btn-ghost" onclick="resetDetDates('${id}')" title="Recalculate this cycle from the configured schedule rules">&#8635; Reset to scheduled</button>`:''}
+    </div>
+    <div class="info-box ib-blue" style="margin-bottom:10px"><span>&#8505;</span><span>${canE?'Changes here override dates for the <strong>current cycle only</strong>. Future cycles are calculated automatically by the scheduler using the configured date rules for this index.':'Only managers can override dates for the current cycle. Future cycles are calculated automatically by the scheduler using the configured date rules for this index.'}</span></div>
+    <div class="fg2">${DATE_COLS.map(([k,lbl])=>`<div class="fg"><label class="flbl">${lbl}</label><input type="date" class="finp" ${canE?'':'disabled'} value="${d[k]||''}" onchange="REPO.find(r=>r.id==='${id}').dates.${k}=this.value;renderDetDates('${id}');renderRepo();toast('Date updated','ok')"></div>`).join('')}</div>
+  </div>`;
+}
+function resetDetDates(id){
+  const x=REPO.find(r=>r.id===id);if(!x)return;
+  if(!canEdit(x.rmb)||!getPerms().asgn){toast('Only managers can reset dates','err');return;}
+  // Recalculate the current cycle's dates from the scheduler using this index's
+  // configured monthly schedule — discards any manual override on this cycle only.
+  // The schedule rules, stage, and everything else are left untouched.
+  x.dates=genDates(x);
+  renderDetDates(id);renderRepo();
+  toast('Dates reset to scheduled values','ok');
 }
 function renderDetWf(id,pane){
   pane=pane||document.getElementById('det-content');
@@ -1172,12 +1343,15 @@ function showEvtForm(type,id){
   ['fe','sr','ah'].forEach(function(t){var b=document.getElementById('evt-btn-'+t);if(b)Object.assign(b.style,{background:t===type?'var(--inkl)':'',color:t===type?'var(--inkt)':''});});
   var today=new Date().toISOString().slice(0,10);
   var fa=document.getElementById('evt-form-area');if(!fa)return;
-  var feA=parseInt(document.getElementById('fe-ann-days')?.value)||0;
-  var feC=parseInt(document.getElementById('fe-comm-days')?.value)||0;
-  var feE=parseInt(document.getElementById('fe-eff-days')?.value)||0;
-  var srD=parseInt(document.getElementById('sr-data-days')?.value)||1;
-  var srC2=parseInt(document.getElementById('sr-comm-days')?.value)||1;
-  var srE2=parseInt(document.getElementById('sr-eff-days-cfg')?.value)||2;
+  // Read this specific index's configured T+N values (set via Index Config / Add Index),
+  // not generic defaults — each index can have its own offsets.
+  var xEv=REPO.find(function(r){return r.id===id;})||{};
+  var feA=xEv.feAnn!=null?xEv.feAnn:0;
+  var feC=xEv.feComm!=null?xEv.feComm:0;
+  var feE=xEv.feEff!=null?xEv.feEff:0;
+  var srD=xEv.srData!=null?xEv.srData:1;
+  var srC2=xEv.srComm!=null?xEv.srComm:1;
+  var srE2=xEv.srEff!=null?xEv.srEff:2;
   if(type==='fe'){
     fa.innerHTML='<div style="border:1px solid var(--warnl);border-radius:var(--r8);overflow:hidden;margin-top:10px">'
       +'<div style="padding:9px 12px;background:var(--warnl)"><strong style="color:var(--warnt)">&#9889; Fast Entry</strong>'
@@ -1269,6 +1443,7 @@ function delSE(id,isin){if(!confirm('Delete?'))return;const i=SPCL_EVTS.findInde
 
 /* ── ADD INDEX WIZARD ── */
 let wzStep=0,selICAL=null,icalQ='',icalFilter='all';
+let cfgEditingId=null; // when set, the wizard is editing this existing REPO index rather than adding a new one
 const WD=['Monday','Tuesday','Wednesday','Thursday','Friday'];
 const AMO=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday'];
@@ -1281,13 +1456,13 @@ const RT=[
   {v:'nth_last_weekday',lbl:'Nth-last weekday of month',params:[{t:'w',tx:'the'},{t:'s',k:'nthlast',opts:['2nd last','3rd last','4th last']},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'of the month'}],desc:s=>`${s.nthlast||'2nd last'} ${s.wd||'Friday'} of month`},
   {v:'nth_trading',lbl:'Nth trading day of month',params:[{t:'w',tx:'the'},{t:'n',k:'nth',mn:1,mx:25,def:1},{t:'w',tx:'th trading day of month'}],desc:s=>`${s.nth||1}th trading day of month`},
   {v:'last_trading',lbl:'Last trading day of month',params:[],desc:_=>'Last trading day of month'},
+  {v:'nth_last_trading',lbl:'Nth-last trading day of month',params:[{t:'w',tx:'the'},{t:'s',k:'nthlast',opts:['2nd last','3rd last','4th last','5th last']},{t:'w',tx:'trading day of month'}],desc:s=>`${s.nthlast||'2nd last'} trading day of month`},
   {v:'n_td_before',lbl:'N trading days before…',params:[{t:'n',k:'n',mn:1,mx:30,def:5},{t:'w',tx:'trading days before'},{t:'s',k:'ref',opts:['effective date','selection date','weight freeze date','public announcement date']}],desc:s=>`T-${s.n||5} before ${s.ref||'effective date'}`},
   {v:'n_cd_before',lbl:'N calendar days before…',params:[{t:'n',k:'n',mn:1,mx:30,def:10},{t:'w',tx:'calendar days before'},{t:'s',k:'ref',opts:['effective date','selection date','weight freeze date']}],desc:s=>`${s.n||10} cal. days before ${s.ref||'effective date'}`},
   {v:'near_wd_1m',lbl:'Nearest weekday ≥ 1 month before…',params:[{t:'w',tx:'nearest'},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'≥ 1 month before'},{t:'s',k:'ref',opts:['effective date','selection date']}],desc:s=>`Nearest ${s.wd||'Friday'} ≥1m before ${s.ref||'effective date'}`},
   {v:'near_wd_nm',lbl:'Nearest weekday ≥ N months before…',params:[{t:'w',tx:'nearest'},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'≥'},{t:'n',k:'months',mn:1,mx:6,def:2},{t:'w',tx:'months before'},{t:'s',k:'ref',opts:['effective date','selection date']}],desc:s=>`Nearest ${s.wd||'Friday'} ≥${s.months||2}m before ${s.ref||'effective date'}`},
   {v:'last_wd_specific',lbl:'Last weekday of specific month each year',params:[{t:'w',tx:'last'},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'of'},{t:'s',k:'mon',opts:ALL_MONTHS},{t:'w',tx:'each year'}],desc:s=>`Last ${s.wd||'Friday'} of ${s.mon||'October'} each year`},
   {v:'last_td_specific',lbl:'Last trading day of specific month each year',params:[{t:'w',tx:'last trading day of'},{t:'s',k:'mon',opts:ALL_MONTHS},{t:'w',tx:'each year'}],desc:s=>`Last trading day of ${s.mon||'September'} each year`},
-  {v:'last_td_multi',lbl:'Last trading day of multiple months each year',params:[{t:'w',tx:'last trading day of'},{t:'mm',k:'mons'},{t:'w',tx:'each year'}],desc:s=>`Last trading day of ${(s.mons&&s.mons.length)?s.mons.join(', '):'Jan, Apr, Jul'} each year`},
   {v:'nth_last_wd_1m',lbl:'Nth-last weekday ≥ 1m before…',params:[{t:'w',tx:'the'},{t:'s',k:'nthlast',opts:['2nd last','3rd last','4th last']},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'of month ≥1m before'},{t:'s',k:'ref',opts:['effective date','selection date']}],desc:s=>`${s.nthlast||'2nd last'} ${s.wd||'Friday'} of month ≥1m before ${s.ref||'effective date'}`},
   {v:'last_wd_1m',lbl:'Last weekday of month ≥ 1m before…',params:[{t:'w',tx:'last'},{t:'s',k:'wd',opts:WEEKDAYS},{t:'w',tx:'of month ≥1m before'},{t:'s',k:'ref',opts:['effective date','selection date']}],desc:s=>`Last ${s.wd||'Friday'} of month ≥1m before ${s.ref||'effective date'}`},
   {v:'last_td_1m',lbl:'Last trading day ≥ 1m before…',params:[{t:'w',tx:'last trading day ≥1m before'},{t:'s',k:'ref',opts:['effective date','selection date']}],desc:s=>`Last trading day ≥1m before ${s.ref||'effective date'}`},
@@ -1333,7 +1508,7 @@ function getRS(evtId){
 }
 function defaultRS(){return{v:'n_td_before',n:5,nth:'1st',nthlast:'2nd last',wd:'Friday',ref:'effective date',anchor:'selection date',mon:'September',mons:['January','April','July'],months:2,cond_n:7,then_v:'nth_last_weekday',then_s:{nthlast:'3rd last',wd:'Friday'},else_v:'last_weekday',else_s:{wd:'Friday'}};}
 function descRule(evtId,fid){const s=getRS(evtId)[fid];const rt=getRt(s.v);return rt?rt.desc(s):'—';}
-function descRS(e,f){return descRule(e,f);}
+function descRS(e,f){const K={weightFreeze:'weightfreeze',pubAnnounce:'pubannounce',clientComm:'clientcomm'};return descRule(e,K[f]||f);}
 
 var rbTab='reconst';
 function initRb(){
@@ -1353,18 +1528,33 @@ function renderRb(evtId){
   const months=monthSel[evtId]?Array.from(monthSel[evtId]).sort((a,b)=>a-b).map(i=>MONTHS[i]).join(', '):'';
   const freqStr=freq==='Monthly'?'Monthly (all months)':freq?(months?`${freq} · ${months}`:`${freq} · months not set`):'Not configured';
   const flds=fieldsFor(evtId,currentCT);
-  body.innerHTML=`<div class="freq-info">&#128197; <strong>${evtId.toUpperCase()}</strong> — ${freqStr} &nbsp;|&nbsp; Contract: ${currentCT}</div>
+  const evtTitle={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'}[evtId]||evtId;
+  body.innerHTML=`<div class="freq-info">&#128197; <strong>${evtTitle}</strong> — ${freqStr} &nbsp;|&nbsp; Contract: ${currentCT}</div>
 
     ${flds.map(f=>`<div class="rule-row"><div class="rl">${f.lbl}${f.req?` <span class="req">*</span>`:''}</div><div class="rc" id="rc-${evtId}-${f.id}">${buildRC(evtId,f.id)}</div><div class="rreset" onclick="resetRC('${evtId}','${f.id}')" title="Reset">×</div></div>`).join('')}
-    <div class="rsumm"><div class="rsumm-t">Rule summary — ${evtId}</div><div class="rsumm-g" id="rsumm-${evtId}"></div></div>`;
+    <div class="rsumm"><div class="rsumm-t">Rule summary — ${evtTitle}</div><div class="rsumm-g" id="rsumm-${evtId}"></div></div>`;
   refreshSumm(evtId);
+}
+// Maps a DATE_FIELDS id to the lowercase phrase used in ref/anchor option lists
+// (e.g. 'selection' -> 'selection date'), so we can filter a field's own name —
+// and any field that hasn't been calculated yet — out of its own reference dropdown.
+const FIELD_REF_PHRASE={effective:'effective date',selection:'selection date',weightfreeze:'weight freeze date',prelim:'prelim communication',qc:'quality control date',pubannounce:'public announcement date',clientcomm:'client communication date'};
+function validRefOpts(opts,fid){
+  const idx=DATE_FIELDS.findIndex(f=>f.id===fid);
+  if(idx<0)return opts; // unknown field id (e.g. portfolio_recv) — leave untouched
+  // A field can only reference dates already calculated earlier in the sequence.
+  // Exclude itself and anything at-or-after its own position; true external
+  // anchor phrases (e.g. "weight breach date") that don't match any DATE_FIELDS
+  // entry are left untouched since they aren't self/forward references.
+  const disallowed=new Set(DATE_FIELDS.slice(idx).map(f=>FIELD_REF_PHRASE[f.id]).filter(Boolean));
+  return opts.filter(o=>!disallowed.has(o));
 }
 function buildRC(evtId,fid){
   const s=getRS(evtId)[fid];const rt=getRt(s.v)||RT[0];let h='';
   h+=`<select class="rsel" onchange="rcType('${evtId}','${fid}',this.value)">${RT.map(r=>`<option value="${r.v}"${s.v===r.v?' selected':''}>${r.lbl}</option>`).join('')}</select>`;
   if(rt.params)rt.params.forEach(p=>{
     if(p.t==='w')h+=`<span class="rword">${p.tx}</span>`;
-    else if(p.t==='s'){h+=`<select class="rsel" onchange="rcP('${evtId}','${fid}','${p.k}',this.value)">${p.opts.map(o=>`<option${s[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;}
+    else if(p.t==='s'){const opts=(p.k==='ref'||p.k==='anchor')?validRefOpts(p.opts,fid):p.opts;h+=`<select class="rsel" onchange="rcP('${evtId}','${fid}','${p.k}',this.value)">${opts.map(o=>`<option${s[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;}
     else if(p.t==='n')h+=`<input class="rnum" type="number" min="${p.mn}" max="${p.mx}" value="${s[p.k]!==undefined?s[p.k]:p.def}" oninput="rcP('${evtId}','${fid}','${p.k}',this.value)">`;
     else if(p.t==='mm'){const sel=s[p.k]||['January','April','July'];h+=`<div style="display:flex;flex-wrap:wrap;gap:3px">${ALL_MONTHS.map(m=>`<span style="padding:2px 5px;border-radius:3px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--b1);background:${sel.includes(m)?'var(--inkl)':'var(--c1)'};color:${sel.includes(m)?'var(--inkt)':'var(--t1)'}" onclick="toggleMM('${evtId}','${fid}','${p.k}','${m}')">${m.slice(0,3)}</span>`).join('')}</div>`;}
   });
@@ -1373,10 +1563,10 @@ function buildRC(evtId,fid){
       <div class="cond-branch">If there are ≤ <input class="rnum" type="number" min="1" max="30" value="${s.cond_n||7}" oninput="rcP('${evtId}','${fid}','cond_n',this.value)"> <span class="rword">trading days remaining to end of quarter after rebalance date</span></div>
       <div class="cond-branch" style="margin-top:5px"><span class="cbadge cbadge-then">THEN</span>
         <select class="rsel" onchange="rcThenType('${evtId}','${fid}',this.value)">${RT.filter(r=>!r.isCond).map(r=>`<option value="${r.v}"${s.then_v===r.v?' selected':''}>${r.lbl}</option>`).join('')}</select>
-        ${nt.params?nt.params.map(p=>{if(p.t==='w')return`<span class="rword">${p.tx}</span>`;if(p.t==='s')return`<select class="rsel" onchange="rcThenP('${evtId}','${fid}','${p.k}',this.value)">${p.opts.map(o=>`<option${(s.then_s||{})[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;if(p.t==='n')return`<input class="rnum" type="number" min="${p.mn}" max="${p.mx}" value="${(s.then_s||{})[p.k]||p.def}" oninput="rcThenP('${evtId}','${fid}','${p.k}',this.value)">`;return'';}).join(''):''}</div>
+        ${nt.params?nt.params.map(p=>{if(p.t==='w')return`<span class="rword">${p.tx}</span>`;if(p.t==='s'){const opts=(p.k==='ref'||p.k==='anchor')?validRefOpts(p.opts,fid):p.opts;return`<select class="rsel" onchange="rcThenP('${evtId}','${fid}','${p.k}',this.value)">${opts.map(o=>`<option${(s.then_s||{})[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;}if(p.t==='n')return`<input class="rnum" type="number" min="${p.mn}" max="${p.mx}" value="${(s.then_s||{})[p.k]||p.def}" oninput="rcThenP('${evtId}','${fid}','${p.k}',this.value)">`;return'';}).join(''):''}</div>
       <div class="cond-branch" style="margin-top:5px"><span class="cbadge cbadge-else">ELSE</span>
         <select class="rsel" onchange="rcElseType('${evtId}','${fid}',this.value)">${RT.filter(r=>!r.isCond).map(r=>`<option value="${r.v}"${s.else_v===r.v?' selected':''}>${r.lbl}</option>`).join('')}</select>
-        ${ne.params?ne.params.map(p=>{if(p.t==='w')return`<span class="rword">${p.tx}</span>`;if(p.t==='s')return`<select class="rsel" onchange="rcElseP('${evtId}','${fid}','${p.k}',this.value)">${p.opts.map(o=>`<option${(s.else_s||{})[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;if(p.t==='n')return`<input class="rnum" type="number" min="${p.mn}" max="${p.mx}" value="${(s.else_s||{})[p.k]||p.def}" oninput="rcElseP('${evtId}','${fid}','${p.k}',this.value)">`;return'';}).join(''):''}</div>
+        ${ne.params?ne.params.map(p=>{if(p.t==='w')return`<span class="rword">${p.tx}</span>`;if(p.t==='s'){const opts=(p.k==='ref'||p.k==='anchor')?validRefOpts(p.opts,fid):p.opts;return`<select class="rsel" onchange="rcElseP('${evtId}','${fid}','${p.k}',this.value)">${opts.map(o=>`<option${(s.else_s||{})[p.k]===o?' selected':''}>${o}</option>`).join('')}</select>`;}if(p.t==='n')return`<input class="rnum" type="number" min="${p.mn}" max="${p.mx}" value="${(s.else_s||{})[p.k]||p.def}" oninput="rcElseP('${evtId}','${fid}','${p.k}',this.value)">`;return'';}).join(''):''}</div>
     </div>`;
   }
   h+=`<span class="rpill">${descRule(evtId,fid)}</span>`;
@@ -1394,12 +1584,27 @@ function toggleMM(e,f,k,m){const s=getRS(e)[f];if(!s[k])s[k]=['January','April',
 function resetRC(e,f){getRS(e)[f]=defaultRS();rfld(e,f);}
 
 
-function initWz(){wzStep=0;selICAL=null;icalQ='';icalFilter='all';Object.keys(monthSel).forEach(function(k){delete monthSel[k];});updWz();filterICAL();}
+function initWz(){wzStep=0;selICAL=null;icalQ='';icalFilter='all';cfgEditingId=null;Object.keys(monthSel).forEach(function(k){delete monthSel[k];});updWz();filterICAL();}
 function updWz(){
   document.querySelectorAll('.wz-panel').forEach((p,i)=>p.classList.toggle('on',i===wzStep));
   document.querySelectorAll('.wz-step').forEach((s,i)=>{s.classList.toggle('on',i===wzStep);s.classList.toggle('done',i<wzStep);});
   document.querySelectorAll('.wz-line').forEach((l,i)=>l.classList.toggle('done',i<wzStep));
   if(wzStep===1)initRbTabs();if(wzStep===2)initRb();if(wzStep===3)renderWzRev();
+  // Reframe the wizard's header/back-button/CTA when editing an existing index via Index Config
+  var h1=document.querySelector('#v-add .ph h1'),sub=document.querySelector('#v-add .ph p');
+  var backBtn=document.querySelector('#v-add .ph-acts button');
+  var cta=document.querySelector('#v-add .wz-footer button.btn-primary[onclick="saveIdx()"]');
+  if(cfgEditingId){
+    if(h1)h1.textContent='Configure Index';
+    if(sub)sub.textContent='Update schedule, event settings and date rules for this index';
+    if(backBtn){backBtn.textContent='← Back';backBtn.setAttribute('onclick',"showView('v-cfg',document.getElementById('sbi-cfg'));renderCfgList()");}
+    if(cta)cta.innerHTML='&#10003; Save changes';
+  } else {
+    if(h1)h1.textContent='Add Index';
+    if(sub)sub.textContent='Pick from ICAL Client Repository, configure schedule and date rules';
+    if(backBtn){backBtn.textContent='← Back';backBtn.setAttribute('onclick',"showView('v-repo',document.querySelectorAll('.sbi')[0])");}
+    if(cta)cta.innerHTML='&#10003; Add to repository';
+  }
 }
 function wzNext(s){if(s===0&&!selICAL){toast('Select an index from ICAL first','err');return;}wzStep++;updWz();}
 function wzBack(s){wzStep--;updWz();}
@@ -1536,8 +1741,11 @@ function renderWzRev(){
   const x=selICAL;
   var ids_wz=getActiveEvts();var L_wz={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'};
   var evts=ids_wz.map(function(id){return{id:id,title:L_wz[id]||id};});
+  var readyMsg=cfgEditingId
+    ? 'Ready to save. Review the updated configuration below and click <strong>Save changes</strong>.'
+    : 'Ready to add. Review details below and click <strong>Add to repository</strong>.';
   document.getElementById('wz-review').innerHTML=`
-    <div class="info-box ib-ok" style="margin-bottom:14px"><span>✓</span><span>Ready to add. Review details below and click <strong>Add to repository</strong>.</span></div>
+    <div class="info-box ib-ok" style="margin-bottom:14px"><span>✓</span><span>${readyMsg}</span></div>
     <div class="fg2">
       <div>
         <div class="fsec" style="margin-top:0">From ICAL</div>
@@ -1557,6 +1765,37 @@ function saveIdx(){
   if(!selICAL){toast('No index selected','err');return;}
   const hasFast=document.querySelector('#blk-fast input[type=checkbox]')?.checked||false;
   const hasSpec=document.querySelector('#blk-spec input[type=checkbox]')?.checked||false;
+  if(cfgEditingId){
+    // Editing an existing index from Index Config — update schedule/event config in place,
+    // never touch its id, stage, dates, clients, or ticker data.
+    var existing=REPO.find(function(r){return r.id===cfgEditingId;});
+    if(!existing){toast('Index not found','err');cfgEditingId=null;return;}
+    existing.monthly=selICAL.monthly||existing.monthly;
+    existing.reviewTypes=selICAL.reviewTypes&&selICAL.reviewTypes.length?selICAL.reviewTypes:existing.reviewTypes;
+    existing.hasFast=hasFast;
+    existing.hasSpec=hasSpec;
+    if(hasFast){
+      existing.fastThreshold=parseInt(document.getElementById('fast-threshold')?.value)||existing.fastThreshold||10;
+      existing.fastSource=document.getElementById('fast-source')?.value||existing.fastSource||'eligible';
+      existing.feAnn=parseInt(document.getElementById('fe-ann-days')?.value)||0;
+      existing.feComm=parseInt(document.getElementById('fe-comm-days')?.value)||0;
+      existing.feEff=parseInt(document.getElementById('fe-eff-days')?.value)||0;
+    }
+    if(hasSpec){
+      existing.specCap=parseFloat(document.getElementById('spec-cap')?.value)||existing.specCap||24;
+      existing.specTarget=parseFloat(document.getElementById('spec-target')?.value)||existing.specTarget||20;
+      existing.specMethod=document.getElementById('spec-others')?.value||existing.specMethod||'Pro-rata';
+      existing.srData=parseInt(document.getElementById('sr-data-days')?.value)||existing.srData||1;
+      existing.srComm=parseInt(document.getElementById('sr-comm-days')?.value)||existing.srComm||1;
+      existing.srEff=parseInt(document.getElementById('sr-eff-days-cfg')?.value)||existing.srEff||2;
+    }
+    renderRepo();renderAssign();
+    toast(`Configuration updated for "${existing.name}"`,'ok');
+    cfgEditingId=null;
+    showView('v-cfg',document.getElementById('sbi-cfg'));
+    renderCfgList();
+    return;
+  }
   const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL),hasFast,hasSpec};
   REPO.unshift(entry);getAsgn(entry.id,entry.rmb);
   renderRepo();toast(`"${selICAL.name}" added to repository`,'ok');
@@ -1565,6 +1804,13 @@ function saveIdx(){
 
 /* ── ASSIGNMENT ── */
 const AN_COLS=['#4B35CC','#166B0F','#8A5100','#A81919','#0B7160','#1756A3','#9D174D','#0C4A6E','#92400E'];
+let workloadExpanded=false;
+function toggleWorkload(){
+  workloadExpanded=!workloadExpanded;
+  var grid=document.getElementById('workload-grid'),chev=document.getElementById('workload-chevron');
+  if(grid)grid.style.display=workloadExpanded?'grid':'none';
+  if(chev)chev.style.transform=workloadExpanded?'rotate(90deg)':'rotate(0deg)';
+}
 function renderAssign(){
   const q=(document.getElementById('assign-q')?.value||'').toLowerCase();
   const dateType=document.getElementById('assign-date-type')?.value||'';
@@ -1592,12 +1838,20 @@ function renderAssign(){
   // Workload
   const wl={};REV_ANALYSTS.forEach(a=>{wl[a.id]={a,p:0,pr:0};});
   REPO.filter(x=>x.rmb==='Review').forEach(x=>{const ag=getAsgn(x.id,x.rmb);if(ag.analyst&&wl[ag.analyst])wl[ag.analyst].p++;if(ag.peer&&wl[ag.peer])wl[ag.peer].pr++;});
-  document.getElementById('workload-grid').innerHTML=Object.values(wl).map((w,i)=>`
+  const wlVals=Object.values(wl);
+  const totalP=wlVals.reduce((s,w)=>s+w.p,0),totalPr=wlVals.reduce((s,w)=>s+w.pr,0);
+  const busiest=wlVals.slice().sort((a,b)=>(b.p+b.pr)-(a.p+a.pr))[0];
+  const summEl=document.getElementById('workload-summary');
+  if(summEl)summEl.textContent=busiest?`${wlVals.length} analysts · ${totalP}p / ${totalPr}pr total · busiest: ${busiest.a.name.split(' ')[0]} (${busiest.p}p · ${busiest.pr}pr)`:`${wlVals.length} analysts`;
+  document.getElementById('workload-grid').innerHTML=wlVals.map((w,i)=>`
     <div style="border:1px solid var(--b1);border-radius:var(--r8);padding:10px;background:var(--c1);text-align:center">
       <div style="width:32px;height:32px;border-radius:50%;background:${AN_COLS[i%AN_COLS.length]};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px;font-family:var(--fm)">${w.a.av}</div>
       <div style="font-size:11px;font-weight:700">${w.a.name.split(' ')[0]}</div>
       <div style="font-size:10px;color:var(--t2)">${w.p}p · ${w.pr}pr</div>
     </div>`).join('');
+  var wlGrid=document.getElementById('workload-grid'),wlChev=document.getElementById('workload-chevron');
+  if(wlGrid)wlGrid.style.display=workloadExpanded?'grid':'none';
+  if(wlChev)wlChev.style.transform=workloadExpanded?'rotate(90deg)':'rotate(0deg)';
   // Table
   const pool=REV_ANALYSTS;const canA=getPerms().asgn;
   document.getElementById('assign-tbody').innerHTML=data.map(x=>{
@@ -1870,6 +2124,7 @@ function clearRepoFilters(){
   ['repo-q','repo-dfrom','repo-dto'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('stage-f').value='';
   document.getElementById('rt-f').value='';
+  var dtypeEl=document.getElementById('repo-dtype');if(dtypeEl)dtypeEl.value='effective';
   rFilter='all';rQ='';
   document.querySelectorAll('#repo-chips .chip').forEach(function(c,i){c.classList.toggle('on',i===0);});
   filterRepo();toast('Filters cleared');
@@ -1914,11 +2169,16 @@ function useExtractedSTs(btn){
 /* ── CALENDAR VIEW ── */
 var calYear=new Date().getFullYear();
 var calMonth=new Date().getMonth(); // 0-based
-var calActiveFilters={effective:true,selection:true,weightFreeze:true,clientComm:true};
+var calMode='month'; // 'month' | 'week'
+var calWeekAnchor=new Date(); // any date within the currently-shown week
+var calActiveFilters={effective:true,selection:true,weightFreeze:true,qc:true,pubAnnounce:true,clientComm:true};
+var calScope='mine'; // 'mine' | 'all' — analysts only; managers always see all
 var CAL_CFG=[
   {key:'effective',   lbl:'Effective',     col:'#166B0F',bg:'#E6F3E2'},
   {key:'selection',   lbl:'Selection',     col:'#4B35CC',bg:'#EDE9FF'},
   {key:'weightFreeze',lbl:'Wt. Freeze',    col:'#0B7160',bg:'#D1FAF0'},
+  {key:'qc',          lbl:'Quality Ctrl',  col:'#1756A3',bg:'#E1ECFA'},
+  {key:'pubAnnounce', lbl:'Pub. Announce', col:'#8A5100',bg:'#FBEDD9'},
   {key:'clientComm',  lbl:'Client Comm',   col:'#A81919',bg:'#FCEAEA'},
 ];
 
@@ -1933,7 +2193,65 @@ function toggleCalFilter(key,el){
   }
   renderCalGrid();
 }
+function setCalScope(scope,el){
+  calScope=scope;
+  document.querySelectorAll('#cal-scope-row .cal-view-btn').forEach(function(b){b.classList.toggle('on',b===el);});
+  renderCalGrid();
+}
+// Shows/hides the Assigned-to-me/All toggle: managers and L2 always see everything,
+// so the toggle is only meaningful — and only shown — for analysts.
+function updateCalScopeVisibility(){
+  var row=document.getElementById('cal-scope-row');
+  if(!row)return;
+  var isAnalyst=CU.role==='Analyst';
+  row.style.display=isAnalyst?'flex':'none';
+  if(!isAnalyst)calScope='all'; // managers/L2 effectively always see all
+}
+// Shows the analyst filter only for managers/L2 (getPerms().asgn is the app's existing
+// "is this user a manager" flag, used the same way in Assignment and Index Config).
+// Populates it with the analysts the current manager can actually see indices for:
+// L2 sees both Review and Ops analysts; a team Manager sees only their own team's.
+function updateCalAnalystFilter(){
+  var row=document.getElementById('cal-analyst-row');
+  var sel=document.getElementById('cal-analyst-f');
+  if(!row||!sel)return;
+  var isMgr=getPerms().asgn;
+  row.style.display=isMgr?'flex':'none';
+  if(!isMgr){sel.value='';return;}
+  var pool=CU.role==='L2Manager'?REV_ANALYSTS.concat(OPS_ANALYSTS):(CU.team==='review'?REV_ANALYSTS:OPS_ANALYSTS);
+  var prevVal=sel.value;
+  sel.innerHTML='<option value="">All analysts</option>'+pool.map(function(a){return'<option value="'+a.id+'">'+a.name+'</option>';}).join('');
+  if(pool.some(function(a){return a.id===prevVal;}))sel.value=prevVal;
+}
+// Single source of truth for which indices the calendar should show: RBAC view
+// permission first, then (for analysts, when scoped to "mine") restrict to indices
+// where the current user is either the primary analyst or the peer reviewer, then
+// (for managers, when an analyst is selected in the filter) restrict to indices
+// where that analyst is either the primary analyst or the peer reviewer.
+function calVisRepo(){
+  var base=REPO.filter(function(x){return canView(x.rmb);});
+  if(CU.role==='Analyst'&&calScope==='mine'){
+    base=base.filter(function(x){
+      var a=getAsgn(x.id,x.rmb);
+      return a.analyst===CU.id||a.peer===CU.id;
+    });
+  }
+  var analystSel=document.getElementById('cal-analyst-f');
+  var filterAid=(getPerms().asgn&&analystSel)?analystSel.value:'';
+  if(filterAid){
+    base=base.filter(function(x){
+      var a=getAsgn(x.id,x.rmb);
+      return a.analyst===filterAid||a.peer===filterAid;
+    });
+  }
+  return base;
+}
 function shiftCal(d){
+  if(calMode==='week'){
+    calWeekAnchor.setDate(calWeekAnchor.getDate()+d*7);
+    renderCalGrid();
+    return;
+  }
   calMonth+=d;
   if(calMonth>11){calMonth=0;calYear++;}
   if(calMonth<0){calMonth=11;calYear--;}
@@ -1942,20 +2260,30 @@ function shiftCal(d){
 function calToday(){
   var now=new Date();
   calYear=now.getFullYear(); calMonth=now.getMonth();
+  calWeekAnchor=new Date();
+  renderCalGrid();
+}
+function setCalMode(mode,el){
+  calMode=mode;
+  document.querySelectorAll('#cal-view-toggle .cal-view-btn').forEach(function(b){b.classList.toggle('on',b===el);});
+  document.getElementById('cal-grid').classList.toggle('week-mode',mode==='week');
   renderCalGrid();
 }
 
 function renderCal(){
+  updateCalScopeVisibility();
+  updateCalAnalystFilter();
   renderCalGrid();
 }
 
 function renderCalGrid(){
+  if(calMode==='week'){renderCalWeek();return;}
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-month-lbl').textContent=MONTHS[calMonth]+' '+calYear;
 
   // Build event map: 'YYYY-MM-DD' -> [{xid,name,dateKey,col,bg}]
   var evtMap={};
-  var visRepo=REPO.filter(function(x){return canView(x.rmb);});
+  var visRepo=calVisRepo();
   visRepo.forEach(function(x){
     if(!x.dates) return;
     CAL_CFG.forEach(function(cfg){
@@ -2041,6 +2369,92 @@ function renderCalGrid(){
   }
 }
 
+function renderCalWeek(){
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Find the Sunday that starts the week containing calWeekAnchor
+  var anchor=new Date(calWeekAnchor);
+  var weekStart=new Date(anchor);
+  weekStart.setDate(anchor.getDate()-anchor.getDay());
+  var weekEnd=new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate()+6);
+
+  var lbl=weekStart.getMonth()===weekEnd.getMonth()
+    ? MONTHS[weekStart.getMonth()]+' '+weekStart.getDate()+'–'+weekEnd.getDate()+', '+weekStart.getFullYear()
+    : MONTHS[weekStart.getMonth()].slice(0,3)+' '+weekStart.getDate()+' – '+MONTHS[weekEnd.getMonth()].slice(0,3)+' '+weekEnd.getDate()+', '+weekEnd.getFullYear();
+  document.getElementById('cal-month-lbl').textContent=lbl;
+
+  // Build event map across the visible 7 days only
+  var evtMap={};
+  var visRepoList=calVisRepo();
+  var dayStrs=[];
+  for(var i=0;i<7;i++){
+    var dd=new Date(weekStart);dd.setDate(weekStart.getDate()+i);
+    dayStrs.push(dd.toISOString().slice(0,10));
+  }
+  visRepoList.forEach(function(x){
+    if(!x.dates) return;
+    CAL_CFG.forEach(function(cfg){
+      if(!calActiveFilters[cfg.key]) return;
+      var dStr=x.dates[cfg.key];
+      if(!dStr||dStr.length!==10) return;
+      if(dayStrs.indexOf(dStr)===-1) return;
+      if(!evtMap[dStr]) evtMap[dStr]=[];
+      evtMap[dStr].push({xid:x.id,name:x.name,dateKey:cfg.key,lbl:cfg.lbl,col:cfg.col,bg:cfg.bg});
+    });
+  });
+
+  var todayStr=new Date().toISOString().slice(0,10);
+  var grid=document.getElementById('cal-grid');
+  var headers=Array.from(grid.children).slice(0,7);
+  grid.innerHTML='';
+  headers.forEach(function(h){grid.appendChild(h);});
+
+  dayStrs.forEach(function(dateStr,i){
+    var dd=new Date(weekStart);dd.setDate(weekStart.getDate()+i);
+    var cell=document.createElement('div');
+    cell.className='cal-cell';
+    if(dateStr===todayStr)cell.classList.add('today');
+
+    var numEl=document.createElement('div');
+    numEl.className='cal-date-num';
+    numEl.textContent=dd.getDate();
+    cell.appendChild(numEl);
+    var subEl=document.createElement('div');
+    subEl.className='cal-date-sub';
+    subEl.textContent=MONTHS[dd.getMonth()].slice(0,3);
+    cell.appendChild(subEl);
+
+    var evts=evtMap[dateStr]||[];
+    // Week view has much more vertical room — show up to 10 before truncating
+    var maxShow=10;
+    evts.slice(0,maxShow).forEach(function(e){
+      var pill=document.createElement('div');
+      pill.className='cal-evt';
+      pill.style.background=e.bg;
+      pill.style.color=e.col;
+      pill.title=e.name+' — '+e.lbl;
+      var shortName=e.name.split(' ').slice(0,4).join(' ');
+      pill.innerHTML='<b style="font-weight:700">'+e.lbl+'</b> &middot; '+shortName;
+      pill.onclick=(function(xid){return function(ev){ev.stopPropagation();openDet(xid);};})(e.xid);
+      cell.appendChild(pill);
+    });
+    if(evts.length>maxShow){
+      var more=document.createElement('div');
+      more.className='cal-more';
+      more.textContent='+'+(evts.length-maxShow)+' more';
+      more.onclick=(function(evList,ds){return function(ev){ev.stopPropagation();showCalDayPopover(evList,ds,ev);};})(evts.slice(maxShow),dateStr);
+      cell.appendChild(more);
+    }
+    if(!evts.length){
+      var empty=document.createElement('div');
+      empty.style.cssText='font-size:10px;color:var(--t3);text-align:center;margin-top:20px';
+      empty.textContent='No dates';
+      cell.appendChild(empty);
+    }
+    grid.appendChild(cell);
+  });
+}
+
 function showCalDayPopover(evts,dateStr,ev){
   var existing=document.getElementById('cal-day-pop');
   if(existing)existing.remove();
@@ -2091,7 +2505,7 @@ function renderCfgList(){
   }
   list.innerHTML=data.map(function(x){
     var isOn=cfgCurrentId===x.id;
-    return '<div class="cfg-list-row'+(isOn?' on':'')+'" onclick="openCfg(\''+x.id+'\')" data-cfg-id="'+x.id+'">'
+    return '<div class="cfg-list-row'+(isOn?' on':'')+'" onclick="openCfgWizard(\''+x.id+'\')" data-cfg-id="'+x.id+'">'
       +'<div style="flex:1;min-width:0">'
       +'<div style="font-size:11px;font-weight:600;'+(isOn?'color:var(--inkt)':'')+'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x.name+'</div>'
       +'<div style="font-size:10px;color:'+(isOn?'var(--inkt)':'var(--t2)')+'margin-top:2px">'+labelTag(x.label)+'</div>'
@@ -2104,6 +2518,76 @@ function renderCfgList(){
   if(sub&&!cfgCurrentId) sub.textContent=data.length+' configurable indices';
 }
 
+function openCfgWizard(id){
+  const x=REPO.find(function(r){return r.id===id;});
+  if(!x){toast('Index not found','err');return;}
+  // Build a selICAL-shaped object from the REPO entry so the wizard can render it exactly
+  // like a freshly-picked ICAL index (Step 1 already complete).
+  selICAL={
+    name:x.name,label:x.label,calcType:x.calcType,bbg:x.bbg,website:x.website,
+    liveDate:x.liveDate,tickers:x.tickers,clients:x.clients,contract:x.contract,
+    agent:x.agent,rmb:x.rmb,monthly:x.monthly||{},etf:x.etf,
+    reviewTypes:x.reviewTypes||[]
+  };
+  // Reset wizard schedule state so stale selections from a previous session don't leak in
+  Object.keys(monthSel).forEach(function(k){delete monthSel[k];});
+  wzStep=1; // "Configure schedule" — visual step 2
+  showView('v-add',null);
+  updWz();
+  // Pre-populate the schedule blocks (Reconstitution + any Review-type blocks) from x.monthly
+  prefillScheduleFromMonthly(x);
+  // Remember which index is being configured so saving from the wizard updates it in place
+  // (rather than adding a duplicate new entry to the repository).
+  cfgEditingId=id;
+}
+function prefillScheduleFromMonthly(x){
+  const MMAP={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const monthly=x.monthly||{};
+  const monthEntries=Object.entries(monthly); // [[ 'Mar', 'Reconstitution, Review' ], ...]
+  // Map block id -> event label as it appears in the monthly schedule text
+  const BLOCK_LABELS={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'};
+  Object.keys(BLOCK_LABELS).forEach(function(blkId){
+    var label=BLOCK_LABELS[blkId];
+    var monthsForType=monthEntries.filter(function(e){return e[1].indexOf(label)>-1;}).map(function(e){return e[0];});
+    var cb=document.querySelector('#blk-'+blkId+' input[type=checkbox]');
+    if(!cb) return;
+    var shouldBeOn = blkId==='reconst' ? true : monthsForType.length>0; // Reconstitution always on
+    cb.checked=shouldBeOn;
+    toggleBlk(blkId,shouldBeOn);
+    if(!shouldBeOn) return;
+    var useMonths = monthsForType.length ? monthsForType : Object.keys(monthly);
+    var freqSel=document.getElementById('freq-'+blkId);
+    if(!freqSel) return;
+    var n=useMonths.length;
+    var freq = n>=12?'Monthly': n===4?'Quarterly': n===2?'Semi-Annual': n===1?'Annual':'';
+    if(!freq) return;
+    freqSel.value=freq;
+    onFreqChange(blkId,freq);
+    // Select the actual months in the grid
+    monthSel[blkId]=new Set(useMonths.map(function(m){return MMAP[m];}).filter(function(i){return i!==undefined;}));
+    renderMG(blkId,freq);
+  });
+  // Fast Entry / Special Rebalance — reflect current config from REPO entry
+  var feCb=document.querySelector('#blk-fast input[type=checkbox]');
+  if(feCb){feCb.checked=!!x.hasFast;toggleBlk('fast',!!x.hasFast);}
+  var srCb=document.querySelector('#blk-spec input[type=checkbox]');
+  if(srCb){srCb.checked=!!x.hasSpec;toggleBlk('spec',!!x.hasSpec);}
+  if(x.hasFast){
+    if(x.fastThreshold!=null){var t=document.getElementById('fast-threshold');if(t)t.value=x.fastThreshold;}
+    if(x.fastSource){var s=document.getElementById('fast-source');if(s)s.value=x.fastSource;}
+    if(x.feAnn!=null){var a=document.getElementById('fe-ann-days');if(a)a.value=x.feAnn;}
+    if(x.feComm!=null){var c=document.getElementById('fe-comm-days');if(c)c.value=x.feComm;}
+    if(x.feEff!=null){var ef=document.getElementById('fe-eff-days');if(ef)ef.value=x.feEff;}
+  }
+  if(x.hasSpec){
+    if(x.specCap!=null){var sc=document.getElementById('spec-cap');if(sc)sc.value=x.specCap;}
+    if(x.specTarget!=null){var st=document.getElementById('spec-target');if(st)st.value=x.specTarget;}
+    if(x.specMethod){var sm=document.getElementById('spec-others');if(sm)sm.value=x.specMethod;}
+    if(x.srData!=null){var sd=document.getElementById('sr-data-days');if(sd)sd.value=x.srData;}
+    if(x.srComm!=null){var srcm=document.getElementById('sr-comm-days');if(srcm)srcm.value=x.srComm;}
+    if(x.srEff!=null){var se=document.getElementById('sr-eff-days-cfg');if(se)se.value=x.srEff;}
+  }
+}
 function openCfg(id){
   cfgCurrentId=id;
   // Highlight in list
@@ -2140,16 +2624,18 @@ function renderCfgPanel(id){
   var detectedFreq=schedMonths.length===12?'Monthly':schedMonths.length===4?'Quarterly':schedMonths.length===2?'Semi-Annual':schedMonths.length===1?'Annual':'';
 
   panel.innerHTML=
-    // ── Header ──
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">'
-    +'<div>'
-    +'<div style="font-size:15px;font-weight:800;color:var(--t0);margin-bottom:3px">'+x.name+'</div>'
-    +'<div style="display:flex;gap:6px;align-items:center">'+labelTag(x.label)+'<span style="font-size:11px;color:var(--t2)">'+x.agent+'</span>'+(x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">OPS</span>')+'</div>'
+    // ── Sticky header card: identity at a glance ──
+    '<div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">'
+    +'<div style="min-width:0">'
+    +'<div style="font-size:16px;font-weight:800;color:var(--t0);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x.name+'</div>'
+    +'<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">'+labelTag(x.label)+'<span style="font-size:11px;color:var(--t2)">'+x.agent+'</span><span style="color:var(--b1)">&middot;</span>'+(x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">OPS</span>')+'</div>'
     +'</div>'
+    +'<button class="btn btn-sm btn-ghost" style="flex-shrink:0" onclick="openDet(\''+id+'\')">&#128196; Full detail</button>'
     +'</div>'
 
     // ── SECTION 1: Schedule ──
     +'<div class="cfg-section">&#128197;&nbsp; Schedule configuration</div>'
+    +'<div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:14px 16px;margin-bottom:14px">'
 
     // Frequency
     +'<div class="cfg-field">'
@@ -2176,7 +2662,7 @@ function renderCfgPanel(id){
     +'</div></div>'
 
     // Review types
-    +'<div class="cfg-field">'
+    +'<div class="cfg-field" style="border-bottom:0">'
     +'<div class="cfg-label">Event types</div>'
     +'<div class="cfg-ctrl">'
     +'<div style="display:flex;flex-wrap:wrap;gap:5px" id="cfg-evt-types">'
@@ -2187,10 +2673,12 @@ function renderCfgPanel(id){
     +'</div>'
     +'<div class="cfg-hint">Event types included in the schedule</div>'
     +'</div></div>'
+    +'</div>'
 
     // ── SECTION 2: Key dates ──
-    +'<div class="cfg-section" style="margin-top:16px">&#128197;&nbsp; Key dates</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">'
+    +'<div class="cfg-section">&#128197;&nbsp; Key dates</div>'
+    +'<div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:14px 16px;margin-bottom:14px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
     +DATE_FIELDS2.map(function(f){
       return'<div style="padding:8px 10px;border:1px solid var(--b1);border-left:3px solid '+f.col+';border-radius:var(--r6)">'
         +'<label class="flbl" style="font-size:9px;color:var(--t3)">'+f.lbl+'</label>'
@@ -2198,17 +2686,18 @@ function renderCfgPanel(id){
         +'</div>';
     }).join('')
     +'</div>'
+    +'</div>'
 
     // ── SECTION 3: Special events ──
-    +'<div class="cfg-section" style="margin-top:16px">&#9889;&nbsp; Special event configuration</div>'
+    +'<div class="cfg-section">&#9889;&nbsp; Special event configuration</div>'
 
     // Fast Entry
-    +'<div style="border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:8px;overflow:hidden">'
-    +'<div style="padding:9px 12px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="border:1px solid var(--b1);border-radius:var(--r10);margin-bottom:8px;overflow:hidden">'
+    +'<div style="padding:10px 14px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
     +'<div style="display:flex;align-items:center;gap:8px"><label class="cb-row" style="margin-bottom:0"><input type="checkbox" id="cfg-has-fast"'+(x.hasFast?' checked':'')+' onchange="cfgToggleFastSpec(\'fast\',this.checked)"><span style="font-size:12px;font-weight:700">Fast Entry</span></label></div>'
     +'<span class="opt-lbl">optional</span>'
     +'</div>'
-    +'<div id="cfg-fast-body" style="padding:12px;'+(x.hasFast?'':'display:none')+'">'
+    +'<div id="cfg-fast-body" style="padding:14px;'+(x.hasFast?'':'display:none')+'">'
     +'<div class="fg2" style="gap:8px">'
     +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Min. constituent threshold</label><input class="finp" type="number" id="cfg-fast-threshold" value="'+(x.fastThreshold||10)+'" min="1" max="100"></div>'
     +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Selection source</label><select class="fsel" id="cfg-fast-source"><option value="eligible"'+(x.fastSource!=='pool'?' selected':'')+'>Eligible list from last reconstitution</option><option value="pool"'+(x.fastSource==='pool'?' selected':'')+'>Replacement pool / pre-approved list</option></select></div>'
@@ -2222,12 +2711,12 @@ function renderCfgPanel(id){
     +'</div>'
 
     // Special Rebalance
-    +'<div style="border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:8px;overflow:hidden">'
-    +'<div style="padding:9px 12px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="border:1px solid var(--b1);border-radius:var(--r10);margin-bottom:8px;overflow:hidden">'
+    +'<div style="padding:10px 14px;background:var(--c1);display:flex;align-items:center;justify-content:space-between">'
     +'<div style="display:flex;align-items:center;gap:8px"><label class="cb-row" style="margin-bottom:0"><input type="checkbox" id="cfg-has-spec"'+(x.hasSpec?' checked':'')+' onchange="cfgToggleFastSpec(\'spec\',this.checked)"><span style="font-size:12px;font-weight:700">Special Rebalance</span></label></div>'
     +'<span class="opt-lbl">optional</span>'
     +'</div>'
-    +'<div id="cfg-spec-body" style="padding:12px;'+(x.hasSpec?'':'display:none')+'">'
+    +'<div id="cfg-spec-body" style="padding:14px;'+(x.hasSpec?'':'display:none')+'">'
     +'<div class="fg2" style="gap:8px">'
     +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Weight cap trigger (%)</label><input class="finp" type="number" id="cfg-spec-cap" value="'+(x.specCap||24)+'" step=".5"></div>'
     +'<div class="fg" style="margin-bottom:0"><label class="flbl" style="font-size:10px">Target weight after cap (%)</label><input class="finp" type="number" id="cfg-spec-target" value="'+(x.specTarget||20)+'" step=".5"></div>'
@@ -2241,19 +2730,6 @@ function renderCfgPanel(id){
     +'</div>'
     +'</div>'
 
-    // ── SECTION 4: Stage ──
-    +'<div class="cfg-section" style="margin-top:16px">&#128260;&nbsp; Stage</div>'
-    +'<div class="cfg-field" style="border:0;padding:0 0 12px">'
-    +'<div class="cfg-label">Current stage</div>'
-    +'<div class="cfg-ctrl">'
-    +'<div style="display:flex;flex-wrap:wrap;gap:5px">'
-    +STAGES.map(function(s){
-      var on=s===(x.stage||'To Start');
-      return'<div style="padding:5px 12px;border-radius:20px;border:1.5px solid '+(on?'var(--ink)':'var(--b1)')+';background:'+(on?'var(--inkl)':'var(--c0)')+';color:'+(on?'var(--inkt)':'var(--t1)')+';font-size:11px;font-weight:600;cursor:pointer" onclick="cfgSetStage(\''+s+'\',this)">'+s+'</div>';
-    }).join('')
-    +'</div>'
-    +'</div></div>'
-
     // ── Save bar ──
     +'<div class="cfg-save-bar">'
     +'<button class="btn btn-ghost" onclick="renderCfgPanel(\''+id+'\')">Discard</button>'
@@ -2264,7 +2740,7 @@ function renderCfgPanel(id){
   var sub=document.getElementById('cfg-ph-sub');
   if(sub) sub.textContent='Editing: '+x.name;
   var acts=document.getElementById('cfg-ph-acts');
-  if(acts) acts.innerHTML='<button class="btn btn-ghost" onclick="openDet(\''+id+'\')">&#128196; Full detail</button>';
+  if(acts) acts.innerHTML='';
 }
 
 function cfgOnFreqChange(id){
@@ -2281,15 +2757,6 @@ function cfgToggleMonth(el,m){
 function cfgToggleFastSpec(type,on){
   var body=document.getElementById('cfg-'+type+'-body');
   if(body) body.style.display=on?'':'none';
-}
-function cfgSetStage(s,el){
-  el.closest('.cfg-ctrl').querySelectorAll('div').forEach(function(d){
-    var isOn=d.textContent===s;
-    d.style.borderColor=isOn?'var(--ink)':'var(--b1)';
-    d.style.background=isOn?'var(--inkl)':'var(--c0)';
-    d.style.color=isOn?'var(--inkt)':'var(--t1)';
-  });
-  el.dataset.selected=s;
 }
 
 function saveCfg(id){
@@ -2347,15 +2814,6 @@ function saveCfg(id){
     x.srData=parseInt(document.getElementById('cfg-sr-data')?.value)||1;
     x.srComm=parseInt(document.getElementById('cfg-sr-comm')?.value)||1;
     x.srEff=parseInt(document.getElementById('cfg-sr-eff')?.value)||2;
-  }
-
-  // Stage — find which pill is selected
-  var stagePills=document.querySelectorAll('.cfg-ctrl div[data-selected]');
-  if(stagePills.length) x.stage=stagePills[0].dataset.selected;
-  // Fallback: find the highlighted pill
-  else{
-    var stageCtrl=document.querySelector('.cfg-ctrl');
-    // rely on the visual state
   }
 
   renderRepo();
