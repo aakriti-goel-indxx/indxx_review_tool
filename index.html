@@ -86,6 +86,20 @@ tbody tr{cursor:pointer;transition:background .1s}.tbody tr:hover{background:var
 /* INLINE ACTION BUTTONS */
 .act-btns{display:flex;gap:2px;opacity:0;transition:opacity .15s}
 tr:hover .act-btns{opacity:1}
+/* Assignments panel */
+.asgn-wl-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.asgn-wl-name{width:110px;flex-shrink:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asgn-wl-bar-track{flex:1;height:7px;border-radius:4px;background:var(--c1);overflow:hidden;display:flex}
+.asgn-wl-bar-p{height:100%;background:var(--ink)}
+.asgn-wl-bar-r{height:100%;background:var(--pur)}
+.asgn-wl-count{width:64px;flex-shrink:0;text-align:right;font-size:10px;color:var(--t2);font-family:var(--fm)}
+.asgn-person-card{border:1.5px solid var(--b1);border-radius:var(--r8);padding:10px 12px;cursor:pointer;transition:all .15s;background:var(--c0)}
+.asgn-person-card:hover{border-color:var(--ink)}
+.asgn-person-card.on{border-color:var(--ink);background:var(--inkl)}
+.asgn-idx-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--b0)}
+.asgn-row-sel{background:var(--inkl)}
+.asgn-idx-row:last-child{border-bottom:none}
+.asgn-idx-chk{width:15px;height:15px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
 .ibt{width:24px;height:24px;border-radius:var(--r4);border:1px solid var(--b1);background:var(--c0);color:var(--t2);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
 .ibt:hover{background:var(--c1);color:var(--t0)}.ibt-del:hover{background:var(--errl);color:var(--errt)}
 /* TICKER / CLIENT */
@@ -288,11 +302,9 @@ tr:hover .act-btns{opacity:1}
   </div>
   <nav class="sb-nav">
     <div class="sb-sec">Core</div>
-    <button class="sbi on" onclick="showView('v-repo',this)"><span class="sbi-icon">📋</span><span>Index Repository</span></button>
+    <button class="sbi on" onclick="showView('v-repo',this)"><span class="sbi-icon">📋</span><span>Index Repository</span><span class="sbi-badge" id="assign-badge">—</span></button>
     <button class="sbi" onclick="showView('v-add',this);initWz()"><span class="sbi-icon">➕</span><span>Add Index</span></button>
-    <button class="sbi" onclick="showView('v-assign',this);renderAssign()"><span class="sbi-icon">👤</span><span>Assignment</span><span class="sbi-badge" id="assign-badge">—</span></button>
     <button class="sbi" onclick="showView('v-cal',this);renderCal()"><span class="sbi-icon">&#128197;</span><span>Calendar</span></button>
-    <button class="sbi" onclick="showView('v-cfg',this);renderCfgList()" id="sbi-cfg"><span class="sbi-icon">&#9881;</span><span>Index Config</span></button>
     <div class="sb-sec">Tools</div>
     <button class="sbi" onclick="showView('v-hol',this);renderHol()"><span class="sbi-icon">🗓</span><span>Holiday List</span></button>
     <button class="sbi" onclick="showView('v-dl',this);applyDL()"><span class="sbi-icon">⬇</span><span>Download Center</span></button>
@@ -321,12 +333,11 @@ tr:hover .act-btns{opacity:1}
 <!-- ══ REPO VIEW ══ -->
 <div class="view on" id="v-repo">
   <div class="ph"><div><h1>Index Repository</h1><p id="repo-sub">Loading…</p></div>
-    <div class="ph-acts">
-      <button class="btn btn-sm btn-ghost" onclick="showView('v-dl',document.querySelectorAll('.sbi')[4]);applyDL()">⬇ Export</button>
-      <button class="btn btn-primary" onclick="showView('v-add',document.querySelectorAll('.sbi')[1]);initWz()">+ Add Index</button>
-    </div>
+    <div class="ph-acts" id="repo-ph-acts"></div>
   </div>
   <div class="summ-row" id="summ-row"></div>
+  <!-- Assignments panel (manager-only; shown only when "Manage Assignments" is toggled on) -->
+  <div id="asgn-panel" style="display:none"></div>
   <div class="toolbar">
     <div class="searchbox"><span class="si">⌕</span><input placeholder="Search name, ticker, client, agent…" id="repo-q" oninput="filterRepo()"></div>
     <div class="chips" id="repo-chips">
@@ -379,7 +390,9 @@ tr:hover .act-btns{opacity:1}
       <div class="wz-line" id="wl1"></div>
       <div class="wz-step" data-s="2"><div class="wz-num">3</div><span class="wz-lbl">Date rules</span></div>
       <div class="wz-line" id="wl2"></div>
-      <div class="wz-step" data-s="3"><div class="wz-num">4</div><span class="wz-lbl">Review &amp; save</span></div>
+      <div class="wz-step" data-s="3"><div class="wz-num">4</div><span class="wz-lbl">Additional information</span></div>
+      <div class="wz-line" id="wl3"></div>
+      <div class="wz-step" data-s="4"><div class="wz-num">5</div><span class="wz-lbl">Review &amp; save</span></div>
     </div>
     <!-- Step 0 -->
     <div class="wz-panel on" id="wzp0">
@@ -506,70 +519,59 @@ tr:hover .act-btns{opacity:1}
         <div class="rb-tabs" id="rb-tabs"></div>
         <div id="rb-body"></div>
       </div>
-      <div class="wz-footer"><button class="btn btn-ghost" onclick="wzBack(2)">← Back</button><button class="btn btn-primary" onclick="wzNext(2)">Next: Review →</button></div>
+      <div class="wz-footer"><button class="btn btn-ghost" onclick="wzBack(2)">← Back</button><button class="btn btn-primary" onclick="wzNext(2)">Next: Additional info →</button></div>
     </div>
     <!-- Step 3 -->
     <div class="wz-panel" id="wzp3">
       <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:20px">
+        <div class="fsec" style="margin-top:0">Index details</div>
+        <div class="fg2">
+          <div class="fg"><label class="flbl">Indxx Thematic Industry Classification System (ITICS)</label>
+            <select class="fsel" id="wz-itics"><option value="No">No</option><option value="Yes">Yes</option></select>
+          </div>
+          <div class="fg"><label class="flbl">Index family</label>
+            <select class="fsel" id="wz-idx-family"><option>Benchmark</option><option>Thematic</option><option>Factor</option><option>Income</option></select>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="flbl">Methodology language</label>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <select class="fsel" id="wz-lang-add" style="max-width:220px" onchange="addWzLang(this.value);this.value=''"></select>
+            <div style="flex:1;display:flex;flex-wrap:wrap;gap:5px;min-height:24px" id="wz-lang-chips"></div>
+          </div>
+          <div class="cfg-hint">Pick a language from the dropdown to add it. Click a chip&rsquo;s &times; to remove.</div>
+        </div>
+        <div class="fsec">Handover</div>
+        <div class="fg2">
+          <div class="fg"><label class="flbl">Handover taken by</label>
+            <select class="fsel" id="wz-handover-taken"></select>
+          </div>
+          <div class="fg"><label class="flbl">Handover given by</label><input type="text" class="finp" id="wz-handover-given" placeholder="Name of person handing over"></div>
+        </div>
+        <div class="fg2">
+          <div class="fg"><label class="flbl">Handover date</label><input type="date" class="finp" id="wz-handover-date" disabled style="background:var(--c1);color:var(--t2)"><div class="cfg-hint">Auto-populated from this index's Live Date in ICAL</div></div>
+          <div class="fg"></div>
+        </div>
+        <div class="fsec">Review assignment</div>
+        <div class="fg2">
+          <div class="fg"><label class="flbl">Primary analyst</label>
+            <select class="fsel" id="wz-primary-analyst"><option value="">— select —</option></select>
+          </div>
+          <div class="fg"><label class="flbl">Peer review analyst</label>
+            <select class="fsel" id="wz-peer-analyst"><option value="">— select —</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="wz-footer"><button class="btn btn-ghost" onclick="wzBack(3)">← Back</button><button class="btn btn-primary" onclick="wzNext(3)">Next: Review →</button></div>
+    </div>
+    <!-- Step 4 -->
+    <div class="wz-panel" id="wzp4">
+      <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:20px">
         <div class="fsec" style="margin-top:0">Review &amp; confirm</div>
         <div id="wz-review"></div>
       </div>
-      <div class="wz-footer"><button class="btn btn-ghost" onclick="wzBack(3)">← Back</button><button class="btn btn-primary" onclick="saveIdx()">✓ Add to repository</button></div>
+      <div class="wz-footer"><button class="btn btn-ghost" onclick="wzBack(4)">← Back</button><button class="btn btn-primary" onclick="saveIdx()">✓ Add to repository</button></div>
     </div>
-  </div>
-</div>
-
-<!-- ══ ASSIGNMENT VIEW ══ -->
-<div class="view" id="v-assign">
-  <div class="ph"><div><h1>Assignment &amp; Allocation</h1><p>Round-robin auto-assignment with manager override. Review-managed indices only.</p></div>
-    <div class="ph-acts">
-      <button class="btn" onclick="openOv('ov-bulk');populateBulkDDs()">Bulk reassign</button>
-      <button class="btn btn-primary" onclick="autoAssign()">↻ Auto-assign all</button>
-    </div>
-  </div>
-  <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">
-    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleWorkload()">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3)">Review team workload</span>
-        <span id="workload-summary" style="font-size:11px;color:var(--t2)"></span>
-      </div>
-      <span id="workload-chevron" style="font-size:11px;color:var(--t2);transition:transform .15s">▸</span>
-    </div>
-    <div id="workload-grid" class="an-grid" style="display:none;margin-top:12px"></div>
-  </div>
-  <div id="assign-date-filter" style="display:none;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r8);padding:12px 14px;margin-bottom:12px">
-    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:10px">Filter by upcoming date</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-      <div class="fg" style="margin-bottom:0;min-width:150px">
-        <label class="flbl">Date type</label>
-        <select class="fsel" id="assign-date-type" onchange="renderAssign()">
-          <option value="">All date types</option>
-          <option value="effective">Effective date</option>
-          <option value="selection">Selection date</option>
-          <option value="weightFreeze">Weight freeze date</option>
-          <option value="clientComm">Client communication date</option>
-        </select>
-      </div>
-      <div class="fg" style="margin-bottom:0">
-        <label class="flbl">From</label>
-        <input class="finp" type="date" id="assign-date-from" onchange="renderAssign()" style="width:130px">
-      </div>
-      <div class="fg" style="margin-bottom:0">
-        <label class="flbl">To</label>
-        <input class="finp" type="date" id="assign-date-to" onchange="renderAssign()" style="width:130px">
-      </div>
-      <button class="btn btn-sm btn-ghost" onclick="clearAssignDateFilter()">&#10005; Clear</button>
-    </div>
-  </div>
-  <div class="toolbar"><div class="searchbox"><span class="si">⌕</span><input placeholder="Search indices…" id="assign-q" oninput="renderAssign()"></div></div>
-  <div class="tbl-wrap">
-    <table style="table-layout:fixed">
-      <thead><tr>
-        <th style="width:32%">Index name</th><th style="width:9%">Label</th><th style="width:13%">Review type</th>
-        <th style="width:19%">Primary analyst</th><th style="width:19%">Peer analyst</th><th style="width:8%">Stage</th>
-      </tr></thead>
-      <tbody id="assign-tbody"></tbody>
-    </table>
   </div>
 </div>
 
@@ -622,32 +624,6 @@ tr:hover .act-btns{opacity:1}
       <div class="cal-day-hdr">Tue</div><div class="cal-day-hdr">Wed</div>
       <div class="cal-day-hdr">Thu</div><div class="cal-day-hdr">Fri</div>
       <div class="cal-day-hdr">Sat</div>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══ INDEX CONFIG VIEW ══ -->
-<div class="view" id="v-cfg">
-  <div class="ph">
-    <div><h1>Index Configuration</h1><p id="cfg-ph-sub">Select an index to configure its schedule, dates and event settings</p></div>
-    <div class="ph-acts" id="cfg-ph-acts"></div>
-  </div>
-  <div style="display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 110px);overflow:hidden">
-    <!-- LEFT: index list -->
-    <div style="border-right:1px solid var(--b1);overflow-y:auto;background:var(--c1)">
-      <div style="padding:10px 12px;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--c1);z-index:1">
-        <div class="searchbox" style="margin-bottom:0"><span class="si">⌕</span><input id="cfg-q" placeholder="Search…" oninput="renderCfgList()" style="font-size:11px"></div>
-      </div>
-      <div id="cfg-index-list"></div>
-    </div>
-    <!-- RIGHT: config panel -->
-    <div style="overflow-y:auto;padding:16px" id="cfg-panel">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--t3)">
-        <div style="font-size:32px;margin-bottom:8px">&#9881;</div>
-        <div style="font-size:13px;font-weight:600">Select an index from the list</div>
-        <div style="font-size:11px;margin-top:4px">to view and edit its configuration</div>
-      </div>
     </div>
   </div>
 </div>
@@ -764,36 +740,12 @@ tr:hover .act-btns{opacity:1}
     <div class="det-shell" style="flex:1;overflow:hidden">
       <nav class="det-nav">
         <button class="det-nav-item on" data-tab="info" onclick="detTab('info',this)"><span class="det-nav-icon">&#128196;</span>Index info</button>
-        <button class="det-nav-item" data-tab="dates" onclick="detTab('dates',this)"><span class="det-nav-icon">&#128197;</span>All dates</button>
-        <button class="det-nav-item" data-tab="workflow" onclick="detTab('workflow',this)"><span class="det-nav-icon">&#128260;</span>Workflow</button>
-        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">&#128100;</span>Analysts</button>
+        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">&#128100;</span>Dates and Assignments</button>
         <button class="det-nav-item" data-tab="events" onclick="detTab('events',this)"><span class="det-nav-icon">&#9889;</span>Special events</button>
       </nav>
       <div class="det-content" id="det-content"></div>
     </div>
     <div class="mf" style="flex-shrink:0"><button class="btn btn-ghost" onclick="closeOv('ov-detail')">Close</button><button class="btn btn-primary" onclick="saveDetChanges()">Save changes</button></div>
-  </div>
-</div>
-<!-- BULK REASSIGN -->
-<div class="ov" id="ov-bulk">
-  <div class="modal mw-md">
-    <div class="mh"><div><div class="mh-t">Bulk reassign</div><div class="mh-s">Swap analyst A→B across all their indices, or assign multiple to one analyst</div></div><button class="mclose" onclick="closeOv('ov-bulk')">✕</button></div>
-    <div class="mb">
-      <div class="chips" style="margin-bottom:14px" id="bulk-mode-chips">
-        <div class="chip on" onclick="setBM('swap',this)">Reassign A → B</div>
-        <div class="chip" onclick="setBM('assign',this)">Assign selected to one</div>
-      </div>
-      <div id="bulk-swap-ui">
-        <div class="fg2"><div class="fg"><label class="flbl">From</label><select class="fsel" id="bulk-from"></select></div><div class="fg"><label class="flbl">To</label><select class="fsel" id="bulk-to"></select></div></div>
-        <div class="fg"><label class="flbl">Slot</label><select class="fsel" id="bulk-slot"><option value="analyst">Primary analyst</option><option value="peer">Peer analyst</option><option value="both">Both slots</option></select></div>
-      </div>
-      <div id="bulk-assign-ui" style="display:none">
-        <div class="fg"><label class="flbl">Assign to</label><select class="fsel" id="bulk-assign-to"></select></div>
-        <div class="fg"><label class="flbl">Slot</label><select class="fsel" id="bulk-assign-slot"><option value="analyst">Primary analyst</option><option value="peer">Peer analyst</option></select></div>
-        <div class="fg"><label class="flbl">Select indices</label><div style="max-height:200px;overflow-y:auto;border:1px solid var(--b1);border-radius:var(--r6)" id="bulk-idx-list"></div></div>
-      </div>
-    </div>
-    <div class="mf"><button class="btn btn-ghost" onclick="closeOv('ov-bulk')">Cancel</button><button class="btn btn-primary" onclick="applyBulk()">Apply</button></div>
   </div>
 </div>
 <!-- RBAC -->
@@ -862,6 +814,103 @@ function getAsgn(id,rmb){
     rrC+=2;
   }return ASGN[id];
 }
+
+/* ── PER-CYCLE DATES & ASSIGNMENTS (historical + future) ── */
+// Stores explicit manager overrides per index, keyed by "year|reviewType|month".
+// A cycle with no entry here simply uses the index's default assignment (getAsgn)
+// and freshly-computed dates (genDatesForCycle) — so nothing ever becomes
+// "unconfigured" or unusable; overrides are purely additive on top of sensible defaults.
+const CYCLE_OVERRIDES={}; // {indexId: {"2026|Reconstitution|Jun": {analyst,peer,dates}}}
+const CYCLE_YEARS=[2026,2027];
+
+/* ── OPTIONAL DATE TYPES (enable/disable per index) ── */
+// QC, ICOM, Prelim Comm, and Portfolio/Universe Receiving aren't always applicable —
+// managers can switch them on or off per index. Everything else (Effective, Selection,
+// Weight Freeze, Public Announce, Client Comm) is always shown since those are core.
+const OPTIONAL_DATE_DEFS=[
+  {key:'qc',           lbl:'Quality control',              col:'#1756A3'},
+  {key:'icomDate',     lbl:'ICOM date',                     col:'#7C3AED'},
+  {key:'prelim',       lbl:'Prelim. communication',         col:'#0B7160'},
+  {key:'portfolioRecv',lbl:'Portfolio/Universe receiving',  col:'#A81919'},
+];
+// Sensible defaults the first time an index is seen: QC on (almost always needed),
+// ICOM/Prelim off (frequently not applicable), Portfolio Receiving on only for
+// White Label indices (where it's most relevant) and off otherwise.
+function defaultOptionalDates(x){
+  return{
+    qc:true,
+    icomDate:false,
+    prelim:false,
+    portfolioRecv:x.label==='White Label',
+  };
+}
+function getOptionalDates(x){
+  if(!x.optionalDates)x.optionalDates=defaultOptionalDates(x);
+  return x.optionalDates;
+}
+function toggleOptionalDate(id,key,on){
+  const x=REPO.find(r=>r.id===id);if(!x)return;
+  if(!getPerms().asgn){toast('Only managers can change this','err');return;}
+  getOptionalDates(x)[key]=on;
+  renderDcaCycleBody(id);
+  toast((on?'Enabled ':'Disabled ')+(OPTIONAL_DATE_DEFS.find(d=>d.key===key)?.lbl||key),'ok');
+}
+function cycleKey(year,reviewType,month){return year+'|'+reviewType+'|'+month;}
+function getCycleOverride(id,year,reviewType,month){
+  const idx=CYCLE_OVERRIDES[id];if(!idx)return null;
+  return idx[cycleKey(year,reviewType,month)]||null;
+}
+function setCycleOverride(id,year,reviewType,month,data){
+  if(!CYCLE_OVERRIDES[id])CYCLE_OVERRIDES[id]={};
+  CYCLE_OVERRIDES[id][cycleKey(year,reviewType,month)]=data;
+}
+function clearCycleOverride(id,year,reviewType,month){
+  const idx=CYCLE_OVERRIDES[id];if(!idx)return;
+  delete idx[cycleKey(year,reviewType,month)];
+}
+// Months (from the index's own configured schedule, x.monthly) where the given
+// review type actually runs — this drives the dynamically-populated month dropdown.
+function monthsForReviewType(x,reviewType){
+  const monthly=x.monthly||{};
+  return Object.keys(monthly).filter(function(m){return (monthly[m]||'').includes(reviewType);});
+}
+const MONTH_ORDER=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function sortMonths(months){
+  return months.slice().sort(function(a,b){return MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b);});
+}
+// Short display labels for the schedule-by-type summary; falls back to the type's own
+// name for any review type that isn't one of the common ones (e.g. custom client types).
+const SCHED_TYPE_ABBR={Reconstitution:'Recon',Rebalance:'Rebal','IPO Review':'IPO Review','Theme Review':'Theme Review',Review:'Review','CG Review':'CG Review','CA Review':'CA Review','CE Review':'CE Review'};
+// Groups the index's own configured monthly schedule (x.monthly, never hardcoded) by
+// review type, e.g. {Reconstitution:['Jun'], Rebalance:['Mar','Jun','Sep','Dec'], 'IPO Review':['Mar','Jun','Sep','Dec']}
+function scheduleByType(x){
+  const types=x.reviewTypes&&x.reviewTypes.length?x.reviewTypes:[];
+  return types.map(function(t){
+    return{type:t,abbr:SCHED_TYPE_ABBR[t]||t,months:sortMonths(monthsForReviewType(x,t))};
+  }).filter(function(r){return r.months.length;});
+}
+function renderScheduleByType(x){
+  const rows=scheduleByType(x);
+  if(!rows.length)return'<span style="color:var(--t3);font-size:12px">No schedule configured</span>';
+  return rows.map(function(r){
+    return'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid var(--b0);align-items:baseline">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--ink);min-width:78px;flex-shrink:0">'+r.abbr+':</span>'
+      +'<span style="font-size:11px;color:var(--t1)">'+r.months.join(', ')+'</span>'
+      +'</div>';
+  }).join('');
+}
+// Computes a believable, deterministic set of dates for one specific year+month cycle
+// (rather than "today + offset" like genDates) so every past/future cycle has its own
+// distinct, reproducible date set consistent with the index's date-rule offsets.
+function genDatesForCycle(x,year,month){
+  const MMAP={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const hash=x.name.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0);
+  const dayOfMonth=5+(hash%20);
+  const eff=new Date(year,MMAP[month],dayOfMonth);
+  const f=function(d){return d.toISOString().slice(0,10);};
+  const sub=function(d,n){const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
+  return{portfolioRecv:f(sub(eff,35)),effective:f(eff),selection:f(sub(eff,30)),prelim:f(sub(eff,6)),weightFreeze:f(sub(eff,5)),qc:f(sub(eff,4)),icomDate:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+}
 function anAv(uid,sz=20){
   const u=USERS.find(x=>x.id===uid);
   if(!u)return`<span style="color:var(--t3);font-size:10px">—</span>`;
@@ -889,7 +938,7 @@ function genDates(x){
   const eff=new Date(ey,em,dayOfMonth);
   const f=function(d){return d.toISOString().slice(0,10);};
   const sub=function(d,n){const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
-  return{effective:f(eff),selection:f(sub(eff,30)),weightFreeze:f(sub(eff,4)),qc:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+  return{effective:f(eff),selection:f(sub(eff,30)),weightFreeze:f(sub(eff,5)),qc:f(sub(eff,4)),icomDate:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
 }
 function rmbForLabel(label){
   /* Business rule: label always determines RMB.
@@ -953,6 +1002,11 @@ function clientVersionMap(x){
   const clients=x.clients||[];
   if(!clients.length||!versions.length)return[];
   const LIC_TYPES=['Licensed','Data License'];
+  const FILE_TYPES=['Constituents','Index values','Both'];
+  // Anchor everything to the index's real ICAL live date so per-client Start Dates are
+  // genuinely derived from ICAL data, not arbitrary — normalises both date formats seen
+  // in the raw feed (YYYY-MM-DD and DD-MM-YYYY) before doing any date math.
+  const liveDate=parseAnyDate(x.liveDate);
   return clients.map(function(c,ci){
     var h=0;for(var i=0;i<c.length;i++)h=(h*31+c.charCodeAt(i))>>>0;
     var h2=(h+ci*101)>>>0;
@@ -965,8 +1019,33 @@ function clientVersionMap(x){
     var order={PR:0,TR:1,NTR:2};
     assigned.sort(function(a,b){return(order[a]!==undefined?order[a]:9)-(order[b]!==undefined?order[b]:9);});
     var lic=LIC_TYPES[Math.floor(h/32)%LIC_TYPES.length];
-    return{client:c,versions:assigned,licenseType:lic};
+    var etfLaunched=(Math.floor(h/4)%3)!==0; // ~2/3 of clients have ETF launched
+    // Each assigned version was onboarded at its own offset after the index went live;
+    // Start Date is the OLDEST (minimum) of those — i.e. when this client first started
+    // receiving any data at all, matching the "1 June PR, 21 June NTR -> Start = 1 June" example.
+    var verOffsets=assigned.map(function(v,vi){
+      var vh=0;var vs=c+v;for(var j=0;j<vs.length;j++)vh=(vh*31+vs.charCodeAt(j))>>>0;
+      return 14+(vh%240); // 14–254 days after live date, per version
+    });
+    var minOffset=verOffsets.length?Math.min.apply(null,verOffsets):0;
+    var startDate=liveDate?addDaysISO(liveDate,minOffset):null;
+    var filesShared=FILE_TYPES[Math.floor(h/64)%FILE_TYPES.length];
+    return{client:c,versions:assigned,licenseType:lic,etfLaunched:etfLaunched,startDate:startDate,filesShared:filesShared};
   });
+}
+// Normalises the messy ICAL liveDate formats (YYYY-MM-DD or DD-MM-YYYY, sometimes with
+// trailing notes) into a plain Date object; returns null if nothing parseable is found.
+function parseAnyDate(raw){
+  if(!raw)return null;
+  var m=String(raw).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  m=String(raw).match(/(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  return null;
+}
+function addDaysISO(date,days){
+  var r=new Date(date);r.setDate(r.getDate()+days);
+  return r.toISOString().slice(0,10);
 }
 function versionPill(v){
   const COL={PR:'#1756A3',TR:'#166B0F',NTR:'#8A5100'};
@@ -982,14 +1061,20 @@ function clientVersionTable(x){
   return'<table style="width:100%;border-collapse:collapse;font-size:11px">'
     +'<thead><tr style="background:var(--c1)">'
     +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Client</th>'
-    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Version(s) taken</th>'
-    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">License type</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Version(s)</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">License</th>'
+    +'<th style="text-align:center;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">ETF</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Start date</th>'
+    +'<th style="text-align:left;padding:6px 10px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--b1)">Files shared</th>'
     +'</tr></thead><tbody>'
     +rows.map(function(r){
       return'<tr style="border-bottom:1px solid var(--b0)">'
         +'<td style="padding:6px 10px;font-weight:600">'+r.client+'</td>'
         +'<td style="padding:6px 10px">'+r.versions.map(versionPill).join('')+'</td>'
         +'<td style="padding:6px 10px">'+licPill(r.licenseType)+'</td>'
+        +'<td style="padding:6px 10px;text-align:center">'+(r.etfLaunched?'<span style="color:var(--okt);font-weight:700">Yes</span>':'<span style="color:var(--t3)">No</span>')+'</td>'
+        +'<td style="padding:6px 10px;font-family:var(--fm);font-size:10px;color:var(--t1)">'+(r.startDate||'—')+'</td>'
+        +'<td style="padding:6px 10px;font-size:10px;color:var(--t1)">'+r.filesShared+'</td>'
         +'</tr>';
     }).join('')
     +'</tbody></table>';
@@ -1003,6 +1088,7 @@ const REPO_DATE_TYPES=[
   ['selection','Selection','#4B35CC'],
   ['weightFreeze','Wt. Freeze','#0B7160'],
   ['qc','QC','#1756A3'],
+  ['icomDate','ICOM','#7C3AED'],
   ['pubAnnounce','Pub. Announce','#8A5100'],
   ['clientComm','Client Comm','#A81919'],
 ];
@@ -1088,6 +1174,30 @@ function renderSumm(data){
 }
 
 function renderRepo(){
+  // Manage Assignments toggle button — manager-only, injected into the page header
+  // so it survives re-render without duplicating static HTML markup.
+  const phActs=document.getElementById('repo-ph-acts');
+  if(phActs){
+    const isMgr=!!getPerms().asgn;
+    let toggleBtn=document.getElementById('btn-asgn-toggle');
+    if(isMgr&&!toggleBtn){
+      toggleBtn=document.createElement('button');
+      toggleBtn.id='btn-asgn-toggle';
+      toggleBtn.className='btn btn-sm btn-ghost';
+      toggleBtn.onclick=toggleAsgnMode;
+      phActs.appendChild(toggleBtn);
+    }
+    if(toggleBtn){
+      toggleBtn.style.display=isMgr?'':'none';
+      toggleBtn.textContent=(asgnMode?'✕ Close assignments':'👤 Manage Assignments');
+      toggleBtn.style.background=asgnMode?'var(--ink)':'';
+      toggleBtn.style.color=asgnMode?'#fff':'';
+      toggleBtn.style.borderColor=asgnMode?'var(--ink)':'';
+    }
+    if(!isMgr&&asgnMode)asgnMode=false; // safety: drop out of assign mode if perms change
+  }
+  document.getElementById('asgn-panel').style.display=asgnMode&&getPerms().asgn?'block':'none';
+  if(asgnMode&&getPerms().asgn)renderAsgnPanel();
   renderThead();
   let data=visRepo();
   var sk=rSort.col;
@@ -1135,8 +1245,8 @@ function renderRepo(){
       <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.peer)}<span style="font-size:11px">${anName(asgn.peer)}</span></div></td>
       <td onclick="event.stopPropagation();openStagePicker('${x.id}',event)" style="cursor:pointer">${sp(x.stage||'To Start')}</td>
       <td onclick="event.stopPropagation()"><div class="act-btns">
-        <div class="ibt" title="Edit" onclick="openDet('${x.id}')">✎</div>
-        ${canEdit(x.rmb)?`<div class="ibt ibt-del" title="Remove" onclick="removeIdx('${x.id}')">✕</div>`:''}
+        ${getPerms().asgn?`<div class="ibt" title="Edit" onclick="openCfgWizard('${x.id}')">✎</div>`:''}
+        ${getPerms().asgn?`<div class="ibt ibt-del" title="Remove" onclick="removeIdx('${x.id}')">✕</div>`:''}
       </div></td>
     </tr>
     ${isExp?`<tr class="exp-row"><td colspan="12"><div class="exp-inner">${renderExpand(x,asgn)}</div></td></tr>`:''}`;
@@ -1151,7 +1261,7 @@ function renderExpand(x,asgn){
   var d=x.dates||{};
   var cls=x.clients.length?x.clients.map(function(c){return'<span class="tag tag-bl" style="margin:2px">'+c+'</span>';}).join(''):'<span style="color:var(--t3)">—</span>';
   var tks=x.tickers.length?x.tickers.map(function(t){return'<span style="display:inline-flex;align-items:center;gap:4px;font-family:var(--fm);font-size:11px;font-weight:700;padding:3px 9px;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r6);margin:2px"><span style="font-size:9px;color:var(--t3)">'+t.type+'</span>'+t.ticker+'</span>';}).join(''):'<span style="color:var(--t3)">—</span>';
-  var mevts=Object.entries(x.monthly||{}).map(function(e){return'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid var(--b0)"><span style="font-size:10px;font-weight:700;color:var(--t3);width:26px">'+e[0]+'</span><span style="font-size:11px">'+e[1]+'</span></div>';}).join('')||'<span style="color:var(--t3);font-size:12px">None</span>';
+  var mevts=renderScheduleByType(x)||'<span style="color:var(--t3);font-size:12px">None</span>';
   var dcards=[['Effective','effective','#166B0F'],['Selection','selection','#4B35CC'],['Wt. Freeze','weightFreeze','#0B7160'],['Client Comm','clientComm','#A81919']].map(function(a){return'<div style="padding:6px 9px;border:1px solid var(--b1);border-left:3px solid '+a[2]+';border-radius:var(--r6);background:var(--c0)"><div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:2px">'+a[0]+'</div><div style="font-family:var(--fm);font-size:12px;font-weight:700">'+(d[a[1]]||'—')+'</div></div>';}).join('');
   var rmb=x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">Operations</span>';
   var peer=x.rmb==='Review'?'<div style="flex:1;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--r6);background:var(--c0)"><div style="font-size:9px;color:var(--t3);font-weight:600;margin-bottom:4px">PEER</div><div style="display:flex;align-items:center;gap:5px">'+anAv(asgn.peer,22)+'<span style="font-size:12px;font-weight:600">'+anName(asgn.peer)+'</span></div></div>':'<div style="flex:1;padding:8px 10px;border:1px dashed var(--b1);border-radius:var(--r6);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px">No peer (Ops)</div>';
@@ -1170,7 +1280,7 @@ function renderExpand(x,asgn){
     +'<div><div class="exp-l">Agent</div><div class="exp-v" style="font-size:11px">'+(x.agent||'—')+'</div></div>'
     +'</div></div></div>'
     +'<div style="display:flex;flex-direction:column;gap:12px">'
-    +'<div><div class="exp-s">Monthly schedule</div><div style="margin-top:4px;max-height:110px;overflow-y:auto;border:1px solid var(--b0);border-radius:var(--r4);padding:4px 8px">'+mevts+'</div></div>'
+    +'<div><div class="exp-s">Schedule</div><div style="margin-top:4px;max-height:110px;overflow-y:auto;border:1px solid var(--b0);border-radius:var(--r4);padding:4px 8px">'+mevts+'</div></div>'
     +'<div><div class="exp-s">Key dates</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px">'+dcards+'</div></div>'
     +'<div><div class="exp-s">Analysts</div><div style="display:flex;gap:8px;margin-top:5px">'
     +'<div style="flex:1;padding:8px 10px;border:1px solid var(--b1);border-radius:var(--r6);background:var(--c0)"><div style="font-size:9px;color:var(--t3);font-weight:600;margin-bottom:4px">'+(x.rmb==='Review'?'PRIMARY':'ANALYST')+'</div><div style="display:flex;align-items:center;gap:5px">'+anAv(asgn.analyst,22)+'<span style="font-size:12px;font-weight:600">'+anName(asgn.analyst)+'</span></div></div>'
@@ -1187,8 +1297,14 @@ function renderExpand(x,asgn){
 let detId=null;
 const SPCL_EVTS=[];let SE_ID=1;
 
-function openDet(id){detId=id;renderDetModal('info');openOv('ov-detail');}
-function openDetTab(id,tab){detId=id;renderDetModal(tab);openOv('ov-detail');}
+function openDet(id){
+  if(detId!==id){detCycleYear=null;detCycleType=null;detCycleMonth=null;}
+  detId=id;renderDetModal('info');openOv('ov-detail');
+}
+function openDetTab(id,tab){
+  if(detId!==id){detCycleYear=null;detCycleType=null;detCycleMonth=null;}
+  detId=id;renderDetModal(tab);openOv('ov-detail');
+}
 
 function renderDetModal(tab){
   tab=tab||'info';
@@ -1205,8 +1321,6 @@ function detTab(tab,btn,xObj){
   var pane=document.getElementById('det-content');if(!pane)return;
   pane.innerHTML='';
   if(tab==='info')renderDetInfo(x,pane);
-  else if(tab==='dates')renderDetDates(detId,pane);
-  else if(tab==='workflow')renderDetWf(detId,pane);
   else if(tab==='analysts')renderDetAn(detId,pane);
   else if(tab==='events')renderDetEvts(detId,pane);
 }
@@ -1221,7 +1335,7 @@ function renderDetInfo(x,pane){
   pane=pane||document.getElementById('det-content');
   const clients=x.clients.map(c=>`<span class="tag tag-bl" style="margin:2px">${c}</span>`).join('');
   const tickers=x.tickers.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r6);margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:var(--t2)">${t.type}</span><span style="font-family:var(--fm);font-weight:600">${t.ticker}</span></div>`).join('');
-  const mevts=Object.entries(x.monthly||{}).map(([m,e])=>`<span style="font-size:10px;padding:2px 8px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r4);margin:2px;display:inline-block"><b style="color:var(--ink)">${m}:</b> ${e}</span>`).join('');
+  const mevts=renderScheduleByType(x);
   pane.innerHTML=`<div class="det-section-title">Index information</div><div class="fg2">
     <div>
       <div class="fsec" style="margin-top:0">From ICAL (read-only)</div>
@@ -1237,7 +1351,7 @@ function renderDetInfo(x,pane){
       <div class="fg"><div class="exp-l">Stage</div>${sp(x.stage||'To Start')}</div>
       <div class="fg"><div class="exp-l">Review Managed By</div>${x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">Operations</span>'}</div>
       <div class="fg"><div class="exp-l">Review types</div><div class="rt-pills" style="margin-top:3px">${rtPills(x.reviewTypes)}</div></div>
-      <div class="fg"><div class="exp-l">Monthly schedule</div><div style="display:flex;flex-wrap:wrap;margin-top:4px">${mevts||'—'}</div></div>
+      <div class="fg"><div class="exp-l">Schedule</div><div style="margin-top:4px">${mevts||'—'}</div></div>
     </div>
   </div>`;
 }
@@ -1245,7 +1359,7 @@ function renderDetDates(id,pane){
   pane=pane||document.getElementById('det-content');
   const x=REPO.find(r=>r.id===id);if(!x)return;
   const d=x.dates||{};
-  const DATE_COLS=[['effective','Effective date','#166B0F'],['selection','Selection date','#4B35CC'],['weightFreeze','Weight freeze','#0B7160'],['qc','Quality control','#1756A3'],['pubAnnounce','Public announce','#8A5100'],['clientComm','Client comm.','#A81919']];
+  const DATE_COLS=[['effective','Effective date','#166B0F'],['selection','Selection date','#4B35CC'],['weightFreeze','Weight freeze','#0B7160'],['qc','Quality control','#1756A3'],['icomDate','ICOM date','#7C3AED'],['pubAnnounce','Public announce','#8A5100'],['clientComm','Client comm.','#A81919']];
   // Only managers (and L2) may override current-cycle dates — analysts can view but not edit,
   // even on indices they otherwise have edit rights on (e.g. recording events, changing stage).
   const canE=canEdit(x.rmb)&&!!getPerms().asgn;
@@ -1279,28 +1393,139 @@ function renderDetWf(id,pane){
     <div class="info-box ib-blue"><span>ℹ</span><span>Click a stage to update. Progress flows left to right.</span></div>`;
 }
 function setStage(id,s){const x=REPO.find(r=>r.id===id);if(x){x.stage=s;renderDetWf(id);renderRepo();toast('Stage: '+s,'ok');}}
+/* ── DATES AND ASSIGNMENTS TAB (per-cycle, historical + future) ── */
+let detCycleYear=null,detCycleType=null,detCycleMonth=null;
+
 function renderDetAn(id,pane){
   pane=pane||document.getElementById('det-content');
   const x=REPO.find(r=>r.id===id);if(!x)return;
-  const asgn=getAsgn(id,x.rmb);
-  const pool=x.rmb==='Operations'?OPS_ANALYSTS:REV_ANALYSTS;
   const canA=getPerms().asgn;
-  pane.innerHTML=`<div class="det-section-title">Analyst assignment</div>
-    ${canA?`<div class="info-box ib-blue" style="margin-bottom:12px"><span>&#8505;</span><span>As manager you can override the auto-assigned analysts below.</span></div>`:''}
+
+  // Default the selectors the first time this index's tab is opened in this session:
+  // current year, first review type, and — if we're in that type's active month —
+  // that month; otherwise the first configured month for the type.
+  const types=x.reviewTypes&&x.reviewTypes.length?x.reviewTypes:['Reconstitution'];
+  if(detCycleYear===null||detCycleType===null||!types.includes(detCycleType)){
+    detCycleYear=new Date().getFullYear();
+    if(!CYCLE_YEARS.includes(detCycleYear))detCycleYear=CYCLE_YEARS[0];
+    detCycleType=types[0];
+  }
+  let monthsForType=sortMonths(monthsForReviewType(x,detCycleType));
+  if(!monthsForType.length)monthsForType=MONTH_ORDER.slice(); // safety net if schedule is empty
+  if(detCycleMonth===null||!monthsForType.includes(detCycleMonth)){
+    const curMonthAbbr=MONTH_ORDER[new Date().getMonth()];
+    detCycleMonth=monthsForType.includes(curMonthAbbr)?curMonthAbbr:monthsForType[0];
+  }
+
+  pane.innerHTML=`<div class="det-section-title">Dates and Assignments</div>
+    <div class="info-box ib-blue" style="margin-bottom:12px"><span>&#8505;</span><span>Browse and, if needed, override the analysts and dates for any past or future cycle. Cycles you don't touch automatically use this index's default assignment and scheduled dates — nothing here can be left unconfigured.</span></div>
+    <div class="fg2" style="margin-bottom:14px">
+      <div class="fg" style="margin-bottom:0"><label class="flbl">Year</label>
+        <select class="fsel" id="dca-year" onchange="dcaChangeYear(this.value)">${CYCLE_YEARS.map(y=>`<option value="${y}"${y===detCycleYear?' selected':''}>${y}</option>`).join('')}</select>
+      </div>
+      <div class="fg" style="margin-bottom:0"><label class="flbl">Review type</label>
+        <select class="fsel" id="dca-type" onchange="dcaChangeType(this.value)">${types.map(t=>`<option${t===detCycleType?' selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="fg" style="margin-bottom:0"><label class="flbl">Month</label>
+        <select class="fsel" id="dca-month" onchange="dcaChangeMonth(this.value)">${monthsForType.map(m=>`<option${m===detCycleMonth?' selected':''}>${m}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div id="dca-cycle-body"></div>`;
+  renderDcaCycleBody(id);
+}
+
+function dcaChangeYear(v){detCycleYear=parseInt(v);renderDcaCycleBody(detId);}
+function dcaChangeType(v){
+  detCycleType=v;
+  const x=REPO.find(r=>r.id===detId);
+  const months=sortMonths(monthsForReviewType(x,detCycleType));
+  detCycleMonth=months.length?months[0]:null;
+  renderDetAn(detId); // rebuild selectors since the month list changes with review type
+}
+function dcaChangeMonth(v){detCycleMonth=v;renderDcaCycleBody(detId);}
+
+function renderDcaCycleBody(id){
+  const body=document.getElementById('dca-cycle-body');if(!body)return;
+  const x=REPO.find(r=>r.id===id);if(!x)return;
+  const canA=getPerms().asgn;
+  const pool=x.rmb==='Operations'?OPS_ANALYSTS:REV_ANALYSTS;
+  const override=getCycleOverride(id,detCycleYear,detCycleType,detCycleMonth);
+  const isOverridden=!!override;
+  const defAsgn=getAsgn(id,x.rmb);
+  const asgn=override?{analyst:override.analyst,peer:override.peer}:defAsgn;
+  const dates=override&&override.dates?override.dates:genDatesForCycle(x,detCycleYear,detCycleMonth);
+  const opt=getOptionalDates(x);
+  // Portfolio/Universe receiving only ever applies to White Label indices (same rule
+  // the date-rule builder already uses) — for everyone else it's not offered at all.
+  const isWL=x.label==='White Label';
+  const CORE_DATES=[['effective','Effective date','#166B0F'],['selection','Selection date','#4B35CC'],['weightFreeze','Weight freeze','#0B7160'],['pubAnnounce','Public announce','#8A5100'],['clientComm','Client comm.','#A81919']];
+  const OPTIONAL_VISIBLE=OPTIONAL_DATE_DEFS.filter(d=>d.key!=='portfolioRecv'||isWL);
+  const ENABLED_OPTIONAL=OPTIONAL_VISIBLE.filter(d=>opt[d.key]);
+  const ALL_SHOWN=[...CORE_DATES,...ENABLED_OPTIONAL.map(d=>[d.key,d.lbl,d.col])];
+
+  body.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:700">${detCycleType} &middot; ${detCycleMonth} ${detCycleYear}</span>
+        ${isOverridden?'<span class="tag" style="background:var(--warnl);color:var(--warnt)">Overridden</span>':'<span class="tag" style="background:var(--c2);color:var(--t1)">Default</span>'}
+      </div>
+      ${canA&&isOverridden?`<button class="btn btn-sm btn-ghost" onclick="dcaResetCycle('${id}')" title="Discard the override and go back to default assignment and scheduled dates">&#8635; Reset to default</button>`:''}
+    </div>
+
     <div class="fg2" style="margin-bottom:14px">
       <div style="border:1px solid var(--b1);border-radius:var(--r8);padding:14px">
         <div class="exp-s">Primary Analyst</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${anAv(asgn.analyst,34)}<div><strong style="font-size:13px">${anName(asgn.analyst)}</strong></div></div>
-        ${canA?`<select class="fsel" id="an-a-sel" style="font-size:11px">${pool.map(a=>`<option value="${a.id}"${asgn.analyst===a.id?' selected':''}>${a.name}</option>`).join('')}</select>`:''}
+        ${canA?`<select class="fsel" id="dca-a-sel" style="font-size:11px">${pool.map(a=>`<option value="${a.id}"${asgn.analyst===a.id?' selected':''}>${a.name}</option>`).join('')}</select>`:''}
       </div>
-      ${x.rmb==='Review'?`<div style="border:1px solid var(--b1);border-radius:var(--r8);padding:14px"><div class="exp-s">PEER REVIEW ANALYST</div><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${anAv(asgn.peer,34)}<div><strong style="font-size:13px">${anName(asgn.peer)}</strong></div></div>${canA?`<select class="fsel" id="an-b-sel" style="font-size:11px">${pool.map(a=>`<option value="${a.id}"${asgn.peer===a.id?' selected':''}>${a.name}</option>`).join('')}</select>`:''}</div>`:'<div style="border:1px dashed var(--b1);border-radius:var(--r8);padding:14px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px">No peer analyst (Ops-managed)</div>'}
+      ${x.rmb==='Review'?`<div style="border:1px solid var(--b1);border-radius:var(--r8);padding:14px"><div class="exp-s">PEER REVIEW ANALYST</div><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">${anAv(asgn.peer,34)}<div><strong style="font-size:13px">${anName(asgn.peer)}</strong></div></div>${canA?`<select class="fsel" id="dca-b-sel" style="font-size:11px">${pool.map(a=>`<option value="${a.id}"${asgn.peer===a.id?' selected':''}>${a.name}</option>`).join('')}</select>`:''}</div>`:'<div style="border:1px dashed var(--b1);border-radius:var(--r8);padding:14px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px">No peer analyst (Ops-managed)</div>'}
     </div>
-    ${canA?`<button class="btn btn-primary" onclick="saveDetAn('${id}')">Save assignment</button>`:''}
-    <div style="margin-top:16px"><div class="exp-s">Full review team</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${pool.map((a,i)=>{const isA=asgn.analyst===a.id,isB=asgn.peer===a.id;return`<div style="text-align:center;padding:10px 12px;border:1px solid ${isA||isB?'var(--ink)':'var(--b1)'};border-radius:var(--r8);background:${isA||isB?'var(--inkl)':'var(--c1)'}">${anAv(a.id,30)}<div style="font-size:11px;font-weight:600;margin-top:4px">${a.name.split(' ')[0]}</div>${isA?'<div style="font-size:9px;color:var(--ink)">Primary</div>':isB?'<div style="font-size:9px;color:var(--ink)">Peer</div>':''}</div>`;}).join('')}</div></div>`;
-}
-function saveDetAn(id){const a=document.getElementById('an-a-sel')?.value;const b=document.getElementById('an-b-sel')?.value;if(a&&b){ASGN[id]={analyst:a,peer:b};renderDetAn(id);renderRepo();toast('Assignment saved','ok');}}
 
+    ${canA?`<div style="margin-bottom:12px">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:6px">Optional dates &mdash; applicable to this index?</div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px">
+        ${OPTIONAL_VISIBLE.map(d=>`<label class="cb-row" style="margin-bottom:0"><input type="checkbox" ${opt[d.key]?'checked':''} onchange="toggleOptionalDate('${id}','${d.key}',this.checked)"><span>${d.lbl}</span></label>`).join('')}
+      </div>
+    </div>`:''}
+
+    <div class="det-section-title" style="margin-top:6px;font-size:11px">Dates for this cycle</div>
+    <div class="date-grid">${ALL_SHOWN.map(([k,lbl,c])=>`<div class="date-box" style="border-top-color:${c}"><div class="date-lbl">${lbl}</div><div class="date-val">${dates[k]||'—'}</div></div>`).join('')}</div>
+    ${canA?`<div class="fg2" style="margin-top:14px">${ALL_SHOWN.map(([k,lbl])=>`<div class="fg"><label class="flbl">${lbl}</label><input type="date" class="finp" id="dca-date-${k}" value="${dates[k]||''}"></div>`).join('')}</div>`:''}
+
+    ${canA?`<button class="btn btn-primary" style="margin-top:10px" onclick="saveDcaCycle('${id}')">Save this cycle</button>`:''}
+
+    <div style="margin-top:16px"><div class="exp-s">Full review team</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${pool.map((a)=>{const isA=asgn.analyst===a.id,isB=asgn.peer===a.id;return`<div style="text-align:center;padding:10px 12px;border:1px solid ${isA||isB?'var(--ink)':'var(--b1)'};border-radius:var(--r8);background:${isA||isB?'var(--inkl)':'var(--c1)'}">${anAv(a.id,30)}<div style="font-size:11px;font-weight:600;margin-top:4px">${a.name.split(' ')[0]}</div>${isA?'<div style="font-size:9px;color:var(--ink)">Primary</div>':isB?'<div style="font-size:9px;color:var(--ink)">Peer</div>':''}</div>`;}).join('')}</div></div>`;
+}
+
+function saveDcaCycle(id){
+  const x=REPO.find(r=>r.id===id);if(!x)return;
+  if(!getPerms().asgn){toast('Only managers can override assignments','err');return;}
+  const a=document.getElementById('dca-a-sel')?.value;
+  const b=document.getElementById('dca-b-sel')?.value;
+  const DATE_KEYS=['effective','selection','weightFreeze','qc','icomDate','prelim','portfolioRecv','pubAnnounce','clientComm'];
+  const dates={};
+  DATE_KEYS.forEach(function(k){
+    const el=document.getElementById('dca-date-'+k);
+    if(el&&el.value)dates[k]=el.value;
+  });
+  const defAsgn=getAsgn(id,x.rmb);
+  setCycleOverride(id,detCycleYear,detCycleType,detCycleMonth,{
+    analyst:a||defAsgn.analyst,
+    peer:b||defAsgn.peer,
+    dates:dates
+  });
+  renderDcaCycleBody(id);
+  renderRepo();
+  toast(detCycleType+' · '+detCycleMonth+' '+detCycleYear+' cycle saved','ok');
+}
+function dcaResetCycle(id){
+  if(!getPerms().asgn){toast('Only managers can reset overrides','err');return;}
+  clearCycleOverride(id,detCycleYear,detCycleType,detCycleMonth);
+  renderDcaCycleBody(id);
+  renderRepo();
+  toast('Reverted to default assignment and scheduled dates','ok');
+}
 function renderDetEvts(id,pane){
   pane=pane||document.getElementById('det-content');
   var x=REPO.find(function(r){return r.id===id;});if(!x)return;
@@ -1322,10 +1547,13 @@ function renderDetEvts(id,pane){
           ?'Security: <b>'+e.sec+'</b> &middot; '+(e.reason||'')+(e.before?' &middot; Count: '+e.before+'&rarr;'+e.after:'')+(e.comment?' &middot; '+e.comment:'')
           :e.type==='special_rebal'
           ?'Security: <b>'+e.sec+'</b> &middot; '+(e.w||'')+'%&rarr;'+(e.cap||'')+'% &middot; Data: '+(e.dataDate||'—')+' Rebal: '+(e.rebalDate||'—')+' Eff: '+(e.effDate||'—')+(e.comment?' &middot; '+e.comment:'')
-          :(e.reqType||'—')+' &middot; '+(e.contact||'—')+' &middot; <b>'+(e.status||'')+'</b>'+(e.desc?' &middot; '+e.desc:'');
+          :(e.reqType||'—')+' &middot; '+(e.contact||'—')+(e.desc?' &middot; '+e.desc:'');
+        var STATUS_COL={'Pending review':{c:'var(--warnt)',b:'var(--warnl)'},'Approved':{c:'var(--okt)',b:'var(--okl)'},'Rejected':{c:'var(--errt)',b:'var(--errl)'},'Completed':{c:'var(--inkt)',b:'var(--inkl)'}};
+        var sc=STATUS_COL[e.status]||STATUS_COL['Pending review'];
+        var statusBadge=e.type==='adhoc'?'<select onchange="updSEStatus('+e.id+',\''+id+'\',this.value)" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:'+sc.b+';color:'+sc.c+';border:none;cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center"><option'+(e.status==='Pending review'?' selected':'')+'>Pending review</option><option'+(e.status==='Approved'?' selected':'')+'>Approved</option><option'+(e.status==='Rejected'?' selected':'')+'>Rejected</option><option'+(e.status==='Completed'?' selected':'')+'>Completed</option></select>':'';
         return '<div style="display:flex;gap:10px;padding:9px 12px;border:1px solid var(--b1);border-left:4px solid '+m.col+';border-radius:var(--r8);margin-bottom:5px;background:var(--c0)">'
           +'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:'+m.bg+';color:'+m.col+';white-space:nowrap;align-self:flex-start">'+m.lbl+'</span>'
-          +'<div style="flex:1"><div style="font-size:11px;font-weight:600">'+e.date+'</div><div style="font-size:11px;color:var(--t1)">'+det+'</div></div>'
+          +'<div style="flex:1"><div style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px">'+e.date+statusBadge+'</div><div style="font-size:11px;color:var(--t1);margin-top:2px">'+det+'</div></div>'
           +'<div style="font-size:10px;color:var(--t3)">'+anName(e.by)+'</div>'
           +'<button onclick="delSE('+e.id+',\''+id+'\')" style="background:none;border:none;color:var(--t3);cursor:pointer">&#10005;</button>'
           +'</div>';
@@ -1386,8 +1614,8 @@ function showEvtForm(type,id){
       +'<div style="padding:9px 12px;background:var(--purl)"><strong style="color:var(--purt)">&#128231; Ad-hoc Request</strong></div>'
       +'<div style="padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Request date <span class="req">*</span></label><input class="finp" type="date" id="ah-d" value="'+today+'"></div>'
-      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Type</label><select class="fsel" id="ah-t"><option>Reconstitution</option><option>Rebalance</option><option>Review</option><option>IPO Review</option><option>CG Review</option><option>CA Review</option><option>CE Review</option><option>Theme Review</option><option>Weight change</option><option>Inclusion request</option><option>Exclusion request</option><option>Other</option></select></div>'
-      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Client contact</label><input class="finp" id="ah-c" placeholder="Name, company"></div>'
+      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Type</label><select class="fsel" id="ah-t"><option>Reconstitution</option><option>Rebalance</option><option>Review</option><option>IPO Review</option><option>CG Review</option><option>CA Review</option><option>CE Review</option><option>Theme Review</option><option>Weight change</option><option>Inclusion request</option><option>Exclusion request</option><option>Methodology Change request</option><option>Other</option></select></div>'
+      +'<div class="fg" style="margin-bottom:0"><label class="flbl">Client</label><select class="fsel" id="ah-c">'+(xEv.clients&&xEv.clients.length?xEv.clients.map(function(c){return'<option>'+c+'</option>';}).join(''):'')+'<option>Other</option></select></div>'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Target effective date</label><input class="finp" type="date" id="ah-e"></div>'
       +'<div class="fg" style="margin-bottom:0"><label class="flbl">Status</label><select class="fsel" id="ah-st"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Completed</option></select></div>'
       +'<div class="fg" style="margin-bottom:0"></div>'
@@ -1436,6 +1664,13 @@ function recAH(id){
   toast('Ad-hoc request recorded','ok');renderDetEvts(id);
 }
 function delSE(id,isin){if(!confirm('Delete this event?'))return;var i=SPCL_EVTS.findIndex(function(e){return e.id===id;});if(i>=0)SPCL_EVTS.splice(i,1);renderDetEvts(isin);}
+function updSEStatus(id,isin,newStatus){
+  var e=SPCL_EVTS.find(function(ev){return ev.id===id;});
+  if(!e)return;
+  e.status=newStatus;
+  renderDetEvts(isin);
+  toast('Status updated to '+newStatus,'ok');
+}
 function recFE(id){const d=document.getElementById('fe-d')?.value,s=document.getElementById('fe-s')?.value?.trim();if(!d||!s){toast('Date and security required','err');return;}SPCL_EVTS.push({id:SE_ID++,isin:id,type:'fast_entry',date:d,sec:s,reason:document.getElementById('fe-r')?.value,before:document.getElementById('fe-b')?.value,after:document.getElementById('fe-a')?.value,by:CU.id});toast('Fast entry recorded','ok');renderDetEvts(id);}
 function recSR(id){const t=document.getElementById('sr-t')?.value,s=document.getElementById('sr-s')?.value?.trim();if(!t||!s){toast('Date and security required','err');return;}const f=(d,n)=>{const r=new Date(d+'T00:00:00');let c=0;while(c<n){r.setDate(r.getDate()+1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r.toISOString().slice(0,10);};SPCL_EVTS.push({id:SE_ID++,isin:id,type:'special_rebal',date:t,sec:s,w:document.getElementById('sr-w')?.value,cap:document.getElementById('sr-c')?.value,t2:f(t,2),by:CU.id});toast('Special rebalance recorded','ok');renderDetEvts(id);}
 function recAH(id){const d=document.getElementById('ah-d')?.value,desc=document.getElementById('ah-desc')?.value?.trim();if(!d||!desc){toast('Date and description required','err');return;}SPCL_EVTS.push({id:SE_ID++,isin:id,type:'adhoc',date:d,reqType:document.getElementById('ah-t')?.value,contact:document.getElementById('ah-c')?.value,effDate:document.getElementById('ah-e')?.value,desc,status:document.getElementById('ah-st')?.value,by:CU.id});toast('Ad-hoc recorded','ok');renderDetEvts(id);}
@@ -1482,6 +1717,7 @@ const DATE_FIELDS=[
   {id:'weightfreeze',  lbl:'Weight freeze date',         req:true, wlOnly:false,rebalSkip:false},
   {id:'prelim',        lbl:'Prelim. communication',      req:false,wlOnly:false,rebalSkip:false},
   {id:'qc',            lbl:'Quality control date',       req:true, wlOnly:false,rebalSkip:false},
+  {id:'icom',          lbl:'ICOM date',                  req:false,wlOnly:false,rebalSkip:false},
   {id:'pubannounce',   lbl:'Public announcement',        req:true, wlOnly:false,rebalSkip:false},
   {id:'clientcomm',    lbl:'Client communication',       req:true, wlOnly:false,rebalSkip:false},
 ];
@@ -1497,18 +1733,19 @@ function getRS(evtId){
     DATE_FIELDS.forEach(f=>{RS[evtId][f.id]=defaultRS();});
     RS[evtId].effective={...defaultRS(),v:'last_weekday',wd:'Friday'};
     RS[evtId].selection={...defaultRS(),v:'near_wd_nm',wd:'Friday',months:2,ref:'effective date'};
-    RS[evtId].weightfreeze={...defaultRS(),v:'n_td_before',n:7,ref:'effective date'};
+    RS[evtId].weightfreeze={...defaultRS(),v:'n_td_before',n:5,ref:'effective date'};
     RS[evtId].prelim={...defaultRS(),v:'n_td_before',n:6,ref:'effective date'};
-    RS[evtId].qc={...defaultRS(),v:'n_td_before',n:5,ref:'effective date'};
-    RS[evtId].pubannounce={...defaultRS(),v:'n_td_before',n:4,ref:'effective date'};
-    RS[evtId].clientcomm={...defaultRS(),v:'n_td_before',n:2,ref:'effective date'};
+    RS[evtId].qc={...defaultRS(),v:'n_td_before',n:4,ref:'effective date'};
+    RS[evtId].icom={...defaultRS(),v:'n_td_before',n:3,ref:'effective date'};
+    RS[evtId].pubannounce={...defaultRS(),v:'n_td_before',n:2,ref:'effective date'};
+    RS[evtId].clientcomm={...defaultRS(),v:'n_td_before',n:1,ref:'effective date'};
     RS[evtId].portfolio_recv={...defaultRS(),v:'portfolio_recv',n:2};
   }
   return RS[evtId];
 }
 function defaultRS(){return{v:'n_td_before',n:5,nth:'1st',nthlast:'2nd last',wd:'Friday',ref:'effective date',anchor:'selection date',mon:'September',mons:['January','April','July'],months:2,cond_n:7,then_v:'nth_last_weekday',then_s:{nthlast:'3rd last',wd:'Friday'},else_v:'last_weekday',else_s:{wd:'Friday'}};}
 function descRule(evtId,fid){const s=getRS(evtId)[fid];const rt=getRt(s.v);return rt?rt.desc(s):'—';}
-function descRS(e,f){const K={weightFreeze:'weightfreeze',pubAnnounce:'pubannounce',clientComm:'clientcomm'};return descRule(e,K[f]||f);}
+function descRS(e,f){const K={weightFreeze:'weightfreeze',pubAnnounce:'pubannounce',clientComm:'clientcomm',icomDate:'icom'};return descRule(e,K[f]||f);}
 
 var rbTab='reconst';
 function initRb(){
@@ -1538,7 +1775,7 @@ function renderRb(evtId){
 // Maps a DATE_FIELDS id to the lowercase phrase used in ref/anchor option lists
 // (e.g. 'selection' -> 'selection date'), so we can filter a field's own name —
 // and any field that hasn't been calculated yet — out of its own reference dropdown.
-const FIELD_REF_PHRASE={effective:'effective date',selection:'selection date',weightfreeze:'weight freeze date',prelim:'prelim communication',qc:'quality control date',pubannounce:'public announcement date',clientcomm:'client communication date'};
+const FIELD_REF_PHRASE={effective:'effective date',selection:'selection date',weightfreeze:'weight freeze date',prelim:'prelim communication',qc:'quality control date',icom:'icom date',pubannounce:'public announcement date',clientcomm:'client communication date'};
 function validRefOpts(opts,fid){
   const idx=DATE_FIELDS.findIndex(f=>f.id===fid);
   if(idx<0)return opts; // unknown field id (e.g. portfolio_recv) — leave untouched
@@ -1584,12 +1821,68 @@ function toggleMM(e,f,k,m){const s=getRS(e)[f];if(!s[k])s[k]=['January','April',
 function resetRC(e,f){getRS(e)[f]=defaultRS();rfld(e,f);}
 
 
-function initWz(){wzStep=0;selICAL=null;icalQ='';icalFilter='all';cfgEditingId=null;Object.keys(monthSel).forEach(function(k){delete monthSel[k];});updWz();filterICAL();}
+let wzLangs=[]; // selected methodology languages for the index being added
+const ALL_LANGUAGES=['English','Hindi','Japanese','Korean','Hebrew','Mandarin Chinese','German','French','Spanish','Italian','Portuguese','Arabic','Russian','Dutch','Swedish','Indonesian','Vietnamese','Thai'];
+
+function initWz(){
+  wzStep=0;selICAL=null;icalQ='';icalFilter='all';cfgEditingId=null;
+  Object.keys(monthSel).forEach(function(k){delete monthSel[k];});
+  // Reset Index Details fields to clean defaults for a fresh add
+  ['wz-handover-given','wz-handover-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var iticsSel=document.getElementById('wz-itics');if(iticsSel)iticsSel.value='No';
+  var famSel=document.getElementById('wz-idx-family');if(famSel)famSel.value='Benchmark';
+  wzLangs=[];
+  updWz();filterICAL();
+}
+// Returns the person pool to offer in Handover/Primary/Peer dropdowns, scoped to the
+// current manager's own team: Review managers see only Review team members, Ops
+// managers see only Ops team members, and L2 (team:'both') sees everyone.
+function wzTeamPool(){
+  if(CU.team==='review')return USERS.filter(function(u){return u.team==='review';});
+  if(CU.team==='ops')return USERS.filter(function(u){return u.team==='ops';});
+  return USERS; // L2 / both
+}
+function wzAnalystPool(){
+  if(CU.team==='review')return REV_ANALYSTS;
+  if(CU.team==='ops')return OPS_ANALYSTS;
+  return REV_ANALYSTS.concat(OPS_ANALYSTS); // L2 / both
+}
+// Populates the Additional Information step's dropdowns — called every time the step
+// is entered so it always reflects the current user's team scope.
+function initWzAdditionalInfo(){
+  var pool=wzTeamPool();
+  var taken=document.getElementById('wz-handover-taken');
+  if(taken)taken.innerHTML=pool.map(function(u){return'<option value="'+u.id+'">'+u.name+'</option>';}).join('');
+  var aPool=wzAnalystPool();
+  var primaryOpts='<option value="">— select —</option>'+aPool.map(function(a){return'<option value="'+a.id+'">'+a.name+'</option>';}).join('');
+  var priSel=document.getElementById('wz-primary-analyst');if(priSel)priSel.innerHTML=primaryOpts;
+  var peerSel=document.getElementById('wz-peer-analyst');if(peerSel)peerSel.innerHTML=primaryOpts;
+  // Language add-dropdown: only offer languages not already chosen
+  var langSel=document.getElementById('wz-lang-add');
+  if(langSel)langSel.innerHTML='<option value="">+ Add language…</option>'+ALL_LANGUAGES.filter(function(l){return wzLangs.indexOf(l)===-1;}).map(function(l){return'<option value="'+l+'">'+l+'</option>';}).join('');
+  renderWzLangChips();
+}
+function addWzLang(lang){
+  if(!lang||wzLangs.indexOf(lang)!==-1)return;
+  wzLangs.push(lang);
+  initWzAdditionalInfo();
+}
+function removeWzLang(lang){
+  wzLangs=wzLangs.filter(function(l){return l!==lang;});
+  initWzAdditionalInfo();
+}
+function renderWzLangChips(){
+  var chips=document.getElementById('wz-lang-chips');
+  if(!chips)return;
+  chips.innerHTML=wzLangs.length?wzLangs.map(function(l){
+    return'<span class="tag tag-bl" style="display:inline-flex;align-items:center;gap:5px">'+l+'<span style="cursor:pointer;font-weight:700" onclick="removeWzLang(\''+l+'\')">&times;</span></span>';
+  }).join(''):'<span style="font-size:11px;color:var(--t3)">No languages selected yet</span>';
+}
 function updWz(){
   document.querySelectorAll('.wz-panel').forEach((p,i)=>p.classList.toggle('on',i===wzStep));
   document.querySelectorAll('.wz-step').forEach((s,i)=>{s.classList.toggle('on',i===wzStep);s.classList.toggle('done',i<wzStep);});
   document.querySelectorAll('.wz-line').forEach((l,i)=>l.classList.toggle('done',i<wzStep));
-  if(wzStep===1)initRbTabs();if(wzStep===2)initRb();if(wzStep===3)renderWzRev();
+  if(wzStep===1)initRbTabs();if(wzStep===2)initRb();if(wzStep===3)initWzAdditionalInfo();if(wzStep===4)renderWzRev();
   // Reframe the wizard's header/back-button/CTA when editing an existing index via Index Config
   var h1=document.querySelector('#v-add .ph h1'),sub=document.querySelector('#v-add .ph p');
   var backBtn=document.querySelector('#v-add .ph-acts button');
@@ -1597,7 +1890,7 @@ function updWz(){
   if(cfgEditingId){
     if(h1)h1.textContent='Configure Index';
     if(sub)sub.textContent='Update schedule, event settings and date rules for this index';
-    if(backBtn){backBtn.textContent='← Back';backBtn.setAttribute('onclick',"showView('v-cfg',document.getElementById('sbi-cfg'));renderCfgList()");}
+    if(backBtn){backBtn.textContent='← Back';backBtn.setAttribute('onclick',"showView('v-repo',document.querySelectorAll('.sbi')[0])");}
     if(cta)cta.innerHTML='&#10003; Save changes';
   } else {
     if(h1)h1.textContent='Add Index';
@@ -1739,25 +2032,50 @@ function updHint(id,freq){
 function renderWzRev(){
   if(!selICAL)return;
   const x=selICAL;
+  var hdEl=document.getElementById('wz-handover-date');
+  if(hdEl)hdEl.value=x.liveDate||'';
   var ids_wz=getActiveEvts();var L_wz={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'};
   var evts=ids_wz.map(function(id){return{id:id,title:L_wz[id]||id};});
   var readyMsg=cfgEditingId
-    ? 'Ready to save. Review the updated configuration below and click <strong>Save changes</strong>.'
-    : 'Ready to add. Review details below and click <strong>Add to repository</strong>.';
+    ? 'Ready to save &mdash; review the updated configuration below, then click <strong>Save changes</strong>.'
+    : 'Ready to add &mdash; review everything below, then click <strong>Add to repository</strong>.';
+  var itics=document.getElementById('wz-itics')?.value||'No';
+  var family=document.getElementById('wz-idx-family')?.value||'Benchmark';
+  var handoverTaken=document.getElementById('wz-handover-taken')?.value;
+  var handoverTakenName=USERS.find(function(u){return u.id===handoverTaken;})?.name||'—';
+  var handoverGiven=document.getElementById('wz-handover-given')?.value||'—';
+  var handoverDate=document.getElementById('wz-handover-date')?.value||'—';
+  var priId=document.getElementById('wz-primary-analyst')?.value;
+  var peerId=document.getElementById('wz-peer-analyst')?.value;
+  var priName=USERS.find(function(u){return u.id===priId;})?.name;
+  var peerName=USERS.find(function(u){return u.id===peerId;})?.name;
   document.getElementById('wz-review').innerHTML=`
-    <div class="info-box ib-ok" style="margin-bottom:14px"><span>✓</span><span>${readyMsg}</span></div>
-    <div class="fg2">
-      <div>
-        <div class="fsec" style="margin-top:0">From ICAL</div>
+    <div class="info-box ib-ok" style="margin-bottom:16px"><span>✓</span><span>${readyMsg}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">From ICAL</div>
         <div class="fg"><div class="exp-l">Name</div><div style="font-size:14px;font-weight:700">${x.name}</div></div>
-        <div class="fg"><div class="exp-l">Label / Agent</div>${labelTag(x.label)} ${x.agent}</div>
-        <div class="fg"><div class="exp-l">Clients</div>${x.clients.join(', ')||'—'}</div>
-        <div class="fg"><div class="exp-l">Tickers</div><span style="font-family:var(--fm);font-size:11px">${x.tickers.map(t=>`${t.type}:${t.ticker}`).join(' · ')||'—'}</span></div>
+        <div class="fg"><div class="exp-l">Label / Agent</div>${labelTag(x.label)} <span style="font-size:12px">${x.agent}</span></div>
+        <div class="fg"><div class="exp-l">Clients</div><span style="font-size:12px">${x.clients.join(', ')||'—'}</span></div>
+        <div class="fg" style="margin-bottom:0"><div class="exp-l">Tickers</div><span style="font-family:var(--fm);font-size:11px">${x.tickers.map(t=>`${t.type}:${t.ticker}`).join(' · ')||'—'}</span></div>
       </div>
-      <div>
-        <div class="fsec" style="margin-top:0">Schedule</div>
+      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">Schedule</div>
         ${evts.map(e=>`<div class="fg"><div class="exp-l">${e.title}</div><div style="font-size:12px;font-weight:600">${document.getElementById('freq-'+e.id)?.value||'<span style="color:var(--t3)">Not set</span>'}</div></div>`).join('')}
         ${evts.length===0?'<div class="info-box ib-warn"><span>⚠</span><span>No events enabled — please go back and enable at least one.</span></div>':''}
+      </div>
+      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px;grid-column:1/-1">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">Additional information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div class="fg"><div class="exp-l">ITICS</div><span class="tag ${itics==='Yes'?'tag-rev':'tag-ca'}" style="font-size:11px">${itics}</span></div>
+          <div class="fg"><div class="exp-l">Index family</div><span style="font-size:12px;font-weight:600">${family}</span></div>
+          <div class="fg"><div class="exp-l">Methodology language</div><span style="font-size:12px">${wzLangs.length?wzLangs.join(', '):'<span style="color:var(--t3)">None selected</span>'}</span></div>
+          <div class="fg"><div class="exp-l">Handover taken by</div><span style="font-size:12px;font-weight:600">${handoverTakenName}</span></div>
+          <div class="fg"><div class="exp-l">Handover given by</div><span style="font-size:12px">${handoverGiven}</span></div>
+          <div class="fg"><div class="exp-l">Handover date</div><span style="font-family:var(--fm);font-size:12px">${handoverDate}</span></div>
+          <div class="fg" style="margin-bottom:0"><div class="exp-l">Primary analyst</div>${priName?`<div style="display:flex;align-items:center;gap:5px">${anAv(priId)}<span style="font-size:12px;font-weight:600">${priName}</span></div>`:'<span style="font-size:12px;color:var(--t3)">Not assigned — will auto-assign</span>'}</div>
+          <div class="fg" style="margin-bottom:0"><div class="exp-l">Peer review analyst</div>${peerName?`<div style="display:flex;align-items:center;gap:5px">${anAv(peerId)}<span style="font-size:12px;font-weight:600">${peerName}</span></div>`:'<span style="font-size:12px;color:var(--t3)">Not assigned — will auto-assign</span>'}</div>
+        </div>
       </div>
     </div>`;
 }
@@ -1789,99 +2107,300 @@ function saveIdx(){
       existing.srComm=parseInt(document.getElementById('sr-comm-days')?.value)||existing.srComm||1;
       existing.srEff=parseInt(document.getElementById('sr-eff-days-cfg')?.value)||existing.srEff||2;
     }
-    renderRepo();renderAssign();
+    renderRepo();
     toast(`Configuration updated for "${existing.name}"`,'ok');
     cfgEditingId=null;
-    showView('v-cfg',document.getElementById('sbi-cfg'));
-    renderCfgList();
+    showView('v-repo',document.querySelectorAll('.sbi')[0]);
     return;
   }
-  const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL),hasFast,hasSpec};
-  REPO.unshift(entry);getAsgn(entry.id,entry.rmb);
+  const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL),hasFast,hasSpec,
+    itics:document.getElementById('wz-itics')?.value||'No',
+    methodLang:wzLangs.slice(),
+    indexFamily:document.getElementById('wz-idx-family')?.value||'Benchmark',
+    handoverTakenBy:document.getElementById('wz-handover-taken')?.value||'',
+    handoverGivenBy:document.getElementById('wz-handover-given')?.value||'',
+    handoverDate:document.getElementById('wz-handover-date')?.value||selICAL.liveDate||'',
+  };
+  REPO.unshift(entry);
+  // Use the explicitly chosen Primary/Peer analyst from the wizard; fall back to
+  // round-robin auto-assignment only if the manager left either field blank.
+  const chosenAnalyst=document.getElementById('wz-primary-analyst')?.value;
+  const chosenPeer=document.getElementById('wz-peer-analyst')?.value;
+  if(chosenAnalyst||chosenPeer){
+    const auto=getAsgn(entry.id,entry.rmb); // ensures an entry exists in ASGN
+    ASGN[entry.id]={analyst:chosenAnalyst||auto.analyst,peer:chosenPeer||auto.peer};
+  } else {
+    getAsgn(entry.id,entry.rmb);
+  }
   renderRepo();toast(`"${selICAL.name}" added to repository`,'ok');
   showView('v-repo',document.querySelectorAll('.sbi')[0]);
 }
 
-/* ── ASSIGNMENT ── */
+/* ── ASSIGNMENTS PANEL (Index Repository) ── */
+// A focused, person-centric workflow: pick someone, see every index currently
+// assigned to them (as Analyst or Peer), tick the ones to move, send to someone else.
 const AN_COLS=['#4B35CC','#166B0F','#8A5100','#A81919','#0B7160','#1756A3','#9D174D','#0C4A6E','#92400E'];
-let workloadExpanded=false;
-function toggleWorkload(){
-  workloadExpanded=!workloadExpanded;
-  var grid=document.getElementById('workload-grid'),chev=document.getElementById('workload-chevron');
-  if(grid)grid.style.display=workloadExpanded?'grid':'none';
-  if(chev)chev.style.transform=workloadExpanded?'rotate(90deg)':'rotate(0deg)';
+let asgnMode=false;        // Manage Assignments toggle — manager-only feature
+let asgnFromId=null;       // currently selected "from" analyst in the panel
+let asgnFromSlot='analyst';// 'analyst' | 'peer' — which slot we're looking at for asgnFromId
+let asgnPickSel={};        // {indexId:true} ticked in the picked-person's index list
+let asgnPanelMode='analyst'; // 'analyst' (pick person → see their indices) | 'index' (search indices → assign to person)
+let asgnIdxSearch='';      // search text in index-search mode
+let asgnIdxPickSel={};     // {indexId:true} ticked in index-search mode
+let asgnIdxSlot='analyst'; // slot to assign in index-search mode
+
+function toggleAsgnMode(){
+  asgnMode=!asgnMode;
+  asgnFromId=null;asgnPickSel={};
+  renderRepo();
 }
-function renderAssign(){
-  const q=(document.getElementById('assign-q')?.value||'').toLowerCase();
-  const dateType=document.getElementById('assign-date-type')?.value||'';
-  const dateFrom=document.getElementById('assign-date-from')?.value||'';
-  const dateTo=document.getElementById('assign-date-to')?.value||'';
-  // Show date filter panel only for managers
-  const dfPanel=document.getElementById('assign-date-filter');
-  if(dfPanel) dfPanel.style.display=getPerms().asgn?'block':'none';
-  const data=REPO.filter(function(x){
-    if(x.rmb!=='Review') return false;
-    if(q&&!x.name.toLowerCase().includes(q)) return false;
-    if(dateType||dateFrom||dateTo){
-      var keys=dateType?[dateType]:['effective','selection','weightFreeze','clientComm'];
-      var matches=keys.some(function(k){
-        var d=x.dates&&x.dates[k];
-        if(!d||d==='—') return false;
-        if(dateFrom&&d<dateFrom) return false;
-        if(dateTo&&d>dateTo) return false;
-        return true;
-      });
-      if(!matches) return false;
-    }
-    return true;
-  });
-  // Workload
+
+// Workload summary — a compact two-bar-per-person list (primary vs peer counts),
+// replacing the old card grid with something that scans in one glance.
+function renderAsgnWorkload(){
   const wl={};REV_ANALYSTS.forEach(a=>{wl[a.id]={a,p:0,pr:0};});
   REPO.filter(x=>x.rmb==='Review').forEach(x=>{const ag=getAsgn(x.id,x.rmb);if(ag.analyst&&wl[ag.analyst])wl[ag.analyst].p++;if(ag.peer&&wl[ag.peer])wl[ag.peer].pr++;});
   const wlVals=Object.values(wl);
-  const totalP=wlVals.reduce((s,w)=>s+w.p,0),totalPr=wlVals.reduce((s,w)=>s+w.pr,0);
-  const busiest=wlVals.slice().sort((a,b)=>(b.p+b.pr)-(a.p+a.pr))[0];
-  const summEl=document.getElementById('workload-summary');
-  if(summEl)summEl.textContent=busiest?`${wlVals.length} analysts · ${totalP}p / ${totalPr}pr total · busiest: ${busiest.a.name.split(' ')[0]} (${busiest.p}p · ${busiest.pr}pr)`:`${wlVals.length} analysts`;
-  document.getElementById('workload-grid').innerHTML=wlVals.map((w,i)=>`
-    <div style="border:1px solid var(--b1);border-radius:var(--r8);padding:10px;background:var(--c1);text-align:center">
-      <div style="width:32px;height:32px;border-radius:50%;background:${AN_COLS[i%AN_COLS.length]};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px;font-family:var(--fm)">${w.a.av}</div>
-      <div style="font-size:11px;font-weight:700">${w.a.name.split(' ')[0]}</div>
-      <div style="font-size:10px;color:var(--t2)">${w.p}p · ${w.pr}pr</div>
-    </div>`).join('');
-  var wlGrid=document.getElementById('workload-grid'),wlChev=document.getElementById('workload-chevron');
-  if(wlGrid)wlGrid.style.display=workloadExpanded?'grid':'none';
-  if(wlChev)wlChev.style.transform=workloadExpanded?'rotate(90deg)':'rotate(0deg)';
-  // Table
-  const pool=REV_ANALYSTS;const canA=getPerms().asgn;
-  document.getElementById('assign-tbody').innerHTML=data.map(x=>{
-    const ag=getAsgn(x.id,x.rmb);
-    const thisPool=x.rmb==='Review'?REV_ANALYSTS:OPS_ANALYSTS;
-    const mkSel=(slot,cur)=>canA?`<select class="fsel" style="font-size:11px" onchange="updateAsgn('${x.id}','${slot}',this.value)">${thisPool.map(a=>`<option value="${a.id}"${cur===a.id?' selected':''}>${a.name}</option>`).join('')}</select>`:`<div style="display:flex;align-items:center;gap:5px">${anAv(cur)}<span style="font-size:11px">${anName(cur)}</span></div>`;
-    const peerCell=x.rmb==='Review'?mkSel('peer',ag.peer):'<span style="color:var(--t3);font-size:11px">N/A (Ops)</span>';
-    return`<tr><td style="max-width:0"><span style="font-size:12px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.name}</span></td><td>${labelTag(x.label)}</td><td><div class="rt-pills">${rtPills(x.reviewTypes)}</div></td><td>${mkSel('analyst',ag.analyst)}</td><td>${peerCell}</td><td>${sp(x.stage||'To Start')}</td></tr>`;
-  }).join('');
-  document.getElementById('assign-badge').textContent=REPO.filter(x=>x.rmb==='Review').length;
+  const maxCount=Math.max(1,...wlVals.map(w=>w.p+w.pr));
+  return '<div style="display:flex;flex-direction:column;gap:2px">'
+    +wlVals.map(w=>{
+      const pPct=(w.p/maxCount*100),prPct=(w.pr/maxCount*100);
+      return '<div class="asgn-wl-row">'
+        +'<span class="asgn-wl-name">'+w.a.name.split(' ')[0]+'</span>'
+        +'<div class="asgn-wl-bar-track"><div class="asgn-wl-bar-p" style="width:'+pPct+'%"></div><div class="asgn-wl-bar-r" style="width:'+prPct+'%"></div></div>'
+        +'<span class="asgn-wl-count">'+w.p+'p · '+w.pr+'pr</span>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div style="display:flex;gap:14px;margin-top:8px;font-size:10px;color:var(--t2)">'
+    +'<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--ink);margin-right:4px"></span>Primary</span>'
+    +'<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--pur);margin-right:4px"></span>Peer review</span>'
+    +'</div>';
 }
-function clearAssignDateFilter(){
-  ['assign-date-type','assign-date-from','assign-date-to'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.value='';
+
+function renderAsgnPanel(){
+  const panel=document.getElementById('asgn-panel');
+  if(!panel)return;
+  panel.innerHTML=
+    '<div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:16px;margin-bottom:16px;box-shadow:var(--sh1)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--t0)">Assignments</div>'
+    +'<div class="cal-view-toggle">'
+    +'<div class="cal-view-btn'+(asgnPanelMode==='analyst'?' on':'')+'" onclick="setAsgnPanelMode(\'analyst\')" title="Pick an analyst and see their indices">By analyst</div>'
+    +'<div class="cal-view-btn'+(asgnPanelMode==='index'?' on':'')+'" onclick="setAsgnPanelMode(\'index\')" title="Search indices then assign to an analyst">By index</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1.6fr;gap:20px">'
+    +'<div>'
+    +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:8px">Team workload</div>'
+    +renderAsgnWorkload()
+    +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin:14px 0 8px">'+(asgnPanelMode==='analyst'?'Select person to reassign from':'Analysts')+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px">'
+    +REV_ANALYSTS.map(function(a){
+      const isOn=asgnFromId===a.id&&asgnPanelMode==='analyst';
+      const click=asgnPanelMode==='analyst'?"selectAsgnFrom('"+a.id+"')":"";
+      return '<div class="asgn-person-card'+(isOn?' on':'')+'"'+(click?' onclick="'+click+'"':'')+' style="'+(asgnPanelMode==='index'?'cursor:default':'')+'">'
+        +'<div style="display:flex;align-items:center;gap:8px">'+anAv(a.id)+'<span style="font-size:12px;font-weight:600">'+a.name+'</span></div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'</div>'
+    +'<div id="asgn-right-pane">'+(asgnPanelMode==='analyst'?renderAsgnRightPane():renderAsgnIndexPane())+'</div>'
+    +'</div>'
+    +'</div>';
+}
+function setAsgnPanelMode(mode){
+  asgnPanelMode=mode;
+  asgnFromId=null;asgnPickSel={};
+  asgnIdxSearch='';asgnIdxPickSel={};
+  renderAsgnPanel();
+}
+
+
+function selectAsgnFrom(id){
+  asgnFromId=(asgnFromId===id)?null:id;
+  asgnFromSlot='analyst';
+  asgnPickSel={};
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnRightPane();
+  // refresh left card highlight without a full repaint
+  document.querySelectorAll('.asgn-person-card').forEach(function(c){
+    c.classList.toggle('on', c.getAttribute('onclick')==="selectAsgnFrom('"+asgnFromId+"')");
   });
-  renderAssign();
 }
-function updateAsgn(id,slot,uid){if(!ASGN[id])ASGN[id]={analyst:null,peer:null};ASGN[id][slot]=uid;renderAssign();renderRepo();toast('Assignment updated','ok');}
-function autoAssign(){let c=0;REPO.filter(x=>x.rmb==='Review').forEach(x=>{const p=REV_ANALYSTS;ASGN[x.id]={analyst:p[c%p.length].id,peer:p[(c+1)%p.length].id};c+=2;});renderAssign();renderRepo();toast('All Review indices auto-assigned','ok');}
-let bulkMode='swap';
-function setBM(m,el){bulkMode=m;document.querySelectorAll('#bulk-mode-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');document.getElementById('bulk-swap-ui').style.display=m==='swap'?'':'none';document.getElementById('bulk-assign-ui').style.display=m==='assign'?'':'none';}
-function populateBulkDDs(){
-  const p=REV_ANALYSTS;
-  ['bulk-from','bulk-to','bulk-assign-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=p.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');});
-  const bl=document.getElementById('bulk-idx-list');if(bl)bl.innerHTML=REPO.filter(x=>x.rmb==='Review').map(x=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--b0);font-size:12px;cursor:pointer"><input type="checkbox" class="bulk-chk" value="${x.id}" style="accent-color:var(--ink)"> ${x.name}</label>`).join('');
+function setAsgnFromSlot(slot){
+  asgnFromSlot=slot;asgnPickSel={};
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnRightPane();
 }
-function applyBulk(){
-  if(bulkMode==='swap'){const from=document.getElementById('bulk-from')?.value,to=document.getElementById('bulk-to')?.value,slot=document.getElementById('bulk-slot')?.value;let n=0;REPO.filter(x=>x.rmb==='Review').forEach(x=>{const a=ASGN[x.id];if(!a)return;if((slot==='analyst'||slot==='both')&&a.analyst===from){a.analyst=to;n++;}if((slot==='peer'||slot==='both')&&a.peer===from){a.peer=to;n++;}});closeOv('ov-bulk');renderAssign();toast(`Reassigned ${n} slot(s)`,'ok');}
-  else{const to=document.getElementById('bulk-assign-to')?.value,slot=document.getElementById('bulk-assign-slot')?.value,sel=[...document.querySelectorAll('.bulk-chk:checked')].map(c=>c.value);sel.forEach(id=>{if(!ASGN[id])ASGN[id]={analyst:null,peer:null};ASGN[id][slot]=to;});closeOv('ov-bulk');renderAssign();toast(`Assigned ${sel.length} indices`,'ok');}
+function asgnIdxList(){
+  if(!asgnFromId)return[];
+  return REPO.filter(function(x){
+    if(x.rmb!=='Review')return false;
+    const a=getAsgn(x.id,x.rmb);
+    return a[asgnFromSlot]===asgnFromId;
+  });
 }
+function renderAsgnRightPane(){
+  if(!asgnFromId){
+    return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:240px;color:var(--t3);border:1.5px dashed var(--b1);border-radius:var(--r8)">'
+      +'<div style="font-size:28px;margin-bottom:8px">👤</div>'
+      +'<div style="font-size:12px;font-weight:600">Pick a person on the left</div>'
+      +'<div style="font-size:11px;margin-top:2px">to see and reassign their indices</div>'
+      +'</div>';
+  }
+  const person=REV_ANALYSTS.find(function(a){return a.id===asgnFromId;});
+  const list=asgnIdxList();
+  const selCount=Object.values(asgnPickSel).filter(Boolean).length;
+  const otherAnalysts=REV_ANALYSTS.filter(function(a){return a.id!==asgnFromId;});
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    +'<div style="display:flex;align-items:center;gap:8px">'+anAv(asgnFromId)+'<span style="font-size:13px;font-weight:700">'+person.name+'</span></div>'
+    +'<div class="chips">'
+    +'<div class="chip'+(asgnFromSlot==='analyst'?' on':'')+'" onclick="setAsgnFromSlot(\'analyst\')">As Primary analyst</div>'
+    +'<div class="chip'+(asgnFromSlot==='peer'?' on':'')+'" onclick="setAsgnFromSlot(\'peer\')">As Peer reviewer</div>'
+    +'</div>'
+    +'</div>'
+    +(list.length?
+      '<div style="border:1px solid var(--b1);border-radius:var(--r8);max-height:280px;overflow-y:auto;margin-bottom:12px">'
+      +'<div class="asgn-idx-row" style="background:var(--c1);font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px">'
+      +'<input type="checkbox" class="asgn-idx-chk" onchange="asgnPickAll(this.checked)" title="Select all">'
+      +'<span style="flex:1">Index name</span><span style="width:70px">Label</span>'
+      +'</div>'
+      +list.map(function(x){
+        const isOn=!!asgnPickSel[x.id];
+        return '<div class="asgn-idx-row">'
+          +'<input type="checkbox" class="asgn-idx-chk" data-id="'+x.id+'" '+(isOn?'checked':'')+' onchange="asgnPickRow(\''+x.id+'\',this.checked)">'
+          +'<span style="flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x.name+'</span>'
+          +'<span style="width:70px">'+labelTag(x.label)+'</span>'
+          +'</div>';
+      }).join('')
+      +'</div>'
+      :'<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px;border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:12px">No indices currently assigned to '+person.name.split(' ')[0]+' in this role.</div>')
+    +(list.length?
+      '<div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">'
+      +'<div class="fg" style="margin-bottom:0;flex:1;min-width:180px"><label class="flbl">Reassign '+(selCount||'all')+' selected to</label>'
+      +'<select class="fsel" id="asgn-target-sel">'+otherAnalysts.map(function(a){return'<option value="'+a.id+'">'+a.name+'</option>';}).join('')+'</select></div>'
+      +'<button class="btn btn-primary" onclick="applyAsgnReassign()">Reassign →</button>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--t3);margin-top:6px">'+(selCount?selCount+' of '+list.length+' selected':'Nothing ticked — Reassign will move all '+list.length+' shown above')+'</div>'
+      :'');
+}
+function asgnPickRow(id,checked){asgnPickSel[id]=checked;document.getElementById('asgn-right-pane').innerHTML=renderAsgnRightPane();}
+function asgnPickAll(checked){
+  asgnIdxList().forEach(function(x){asgnPickSel[x.id]=checked;});
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnRightPane();
+}
+function applyAsgnReassign(){
+  const target=document.getElementById('asgn-target-sel')?.value;
+  if(!target){toast('Choose someone to reassign to','err');return;}
+  const list=asgnIdxList();
+  const selCount=Object.values(asgnPickSel).filter(Boolean).length;
+  const toMove=selCount?list.filter(function(x){return asgnPickSel[x.id];}):list;
+  if(!toMove.length){toast('Nothing to reassign','err');return;}
+  toMove.forEach(function(x){
+    if(!ASGN[x.id])ASGN[x.id]={analyst:null,peer:null};
+    ASGN[x.id][asgnFromSlot]=target;
+  });
+  const targetName=REV_ANALYSTS.find(function(a){return a.id===target;})?.name.split(' ')[0];
+  toast('Moved '+toMove.length+' index'+(toMove.length>1?'es':'')+' to '+targetName,'ok');
+  asgnPickSel={};
+  renderRepo();
+}
+
+/* ── INDEX-FIRST ASSIGNMENT (By index mode) ── */
+// Shows a searchable list of ALL Review-managed indices (not filtered by analyst).
+// The manager searches/browses, ticks whichever ones they want, then picks a target
+// analyst and slot (Primary / Peer) and assigns — regardless of who currently holds them.
+function renderAsgnIndexPane(){
+  const allIdxs=REPO.filter(function(x){return x.rmb==='Review';});
+  const q=asgnIdxSearch.toLowerCase();
+  const filtered=q?allIdxs.filter(function(x){
+    return x.name.toLowerCase().includes(q)||
+           (x.clients||[]).some(function(c){return c.toLowerCase().includes(q);})||
+           (x.tickers||[]).some(function(t){return t.ticker.toLowerCase().includes(q);});
+  }):allIdxs;
+  const selCount=Object.values(asgnIdxPickSel).filter(Boolean).length;
+  const allChecked=filtered.length>0&&filtered.every(function(x){return asgnIdxPickSel[x.id];});
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    +'<div style="font-size:12px;font-weight:700;color:var(--t0)">Find &amp; select indices</div>'
+    +'</div>'
+    +'<div style="position:relative;margin-bottom:8px">'
+    +'<span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px">⌕</span>'
+    +'<input class="finp" placeholder="Search by name, ticker or client…" value="'+asgnIdxSearch+'" oninput="asgnIdxSearchChange(this.value)" style="padding-left:28px;font-size:12px">'
+    +'</div>'
+    +'<div style="border:1px solid var(--b1);border-radius:var(--r8);max-height:260px;overflow-y:auto;margin-bottom:12px">'
+    +'<div class="asgn-idx-row" style="background:var(--c1);font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.4px">'
+    +'<input type="checkbox" class="asgn-idx-chk" '+(allChecked?'checked':'')+' onchange="asgnIdxPickAllFiltered(this.checked,event)" title="Select all visible">'
+    +'<span style="flex:1">Index name</span>'
+    +'<span style="width:36px;text-align:center">Label</span>'
+    +'<span style="width:60px;text-align:right;font-size:9px">Current</span>'
+    +'</div>'
+    +(filtered.length?filtered.map(function(x){
+      const a=getAsgn(x.id,x.rmb);
+      const curName=asgnIdxSlot==='analyst'?anName(a.analyst):anName(a.peer);
+      return '<div class="asgn-idx-row'+(asgnIdxPickSel[x.id]?' asgn-row-sel':'')+'">'
+        +'<input type="checkbox" class="asgn-idx-chk" '+(asgnIdxPickSel[x.id]?'checked':'')+' onchange="asgnIdxPickOne(\''+x.id+'\',this.checked)">'
+        +'<span style="flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+x.name+'">'+x.name+'</span>'
+        +'<span style="width:36px;text-align:center">'+labelTag(x.label)+'</span>'
+        +'<span style="width:60px;text-align:right;font-size:10px;color:var(--t3)">'+curName+'</span>'
+        +'</div>';
+    }).join('')
+    :'<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">No indices match your search.</div>')
+    +'</div>'
+    // Slot toggle + target + assign button
+    +'<div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">'
+    +'<div class="fg" style="margin-bottom:0">'
+    +'<label class="flbl">Assign as</label>'
+    +'<div class="cal-view-toggle" style="display:inline-flex">'
+    +'<div class="cal-view-btn'+(asgnIdxSlot==='analyst'?' on':'')+'" onclick="asgnIdxSetSlot(\'analyst\')">Primary</div>'
+    +'<div class="cal-view-btn'+(asgnIdxSlot==='peer'?' on':'')+'" onclick="asgnIdxSetSlot(\'peer\')">Peer</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="fg" style="margin-bottom:0;flex:1;min-width:160px">'
+    +'<label class="flbl">To analyst</label>'
+    +'<select class="fsel" id="asgn-idx-target">'+REV_ANALYSTS.map(function(a){return'<option value="'+a.id+'">'+a.name+'</option>';}).join('')+'</select>'
+    +'</div>'
+    +'<button class="btn btn-primary" onclick="applyAsgnByIndex()" '+(selCount?'':'disabled')+'>Assign '+selCount+' →</button>'
+    +'</div>'
+    +(selCount?'<div style="font-size:10px;color:var(--t3);margin-top:6px">'+selCount+' of '+filtered.length+' visible selected &middot; '+allIdxs.length+' total Review indices</div>':'<div style="font-size:10px;color:var(--t3);margin-top:6px">Tick indices above to enable assignment</div>');
+}
+function asgnIdxSearchChange(val){
+  asgnIdxSearch=val;
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnIndexPane();
+}
+function asgnIdxSetSlot(slot){
+  asgnIdxSlot=slot;
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnIndexPane();
+}
+function asgnIdxPickOne(id,checked){
+  asgnIdxPickSel[id]=checked;
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnIndexPane();
+}
+function asgnIdxPickAllFiltered(checked,ev){
+  const allIdxs=REPO.filter(function(x){return x.rmb==='Review';});
+  const q=asgnIdxSearch.toLowerCase();
+  const filtered=q?allIdxs.filter(function(x){
+    return x.name.toLowerCase().includes(q)||
+           (x.clients||[]).some(function(c){return c.toLowerCase().includes(q);})||
+           (x.tickers||[]).some(function(t){return t.ticker.toLowerCase().includes(q);});
+  }):allIdxs;
+  filtered.forEach(function(x){asgnIdxPickSel[x.id]=checked;});
+  document.getElementById('asgn-right-pane').innerHTML=renderAsgnIndexPane();
+}
+function applyAsgnByIndex(){
+  const target=document.getElementById('asgn-idx-target')?.value;
+  if(!target){toast('Choose a target analyst','err');return;}
+  const toMove=REPO.filter(function(x){return asgnIdxPickSel[x.id]&&x.rmb==='Review';});
+  if(!toMove.length){toast('No indices selected','err');return;}
+  toMove.forEach(function(x){
+    if(!ASGN[x.id])ASGN[x.id]={analyst:null,peer:null};
+    ASGN[x.id][asgnIdxSlot]=target;
+  });
+  const targetName=REV_ANALYSTS.find(function(a){return a.id===target;})?.name.split(' ')[0];
+  const slotLabel=asgnIdxSlot==='analyst'?'Primary':'Peer';
+  toast('Assigned '+toMove.length+' index'+(toMove.length>1?'es':'')+' to '+targetName+' ('+slotLabel+')','ok');
+  asgnIdxPickSel={};
+  renderRepo();
+}
+
 
 /* ── HOLIDAYS ── */
 const HOL_REGIONS=['US','China','Japan','Korea','Israel','India'];
@@ -2531,6 +3050,7 @@ function openCfgWizard(id){
   };
   // Reset wizard schedule state so stale selections from a previous session don't leak in
   Object.keys(monthSel).forEach(function(k){delete monthSel[k];});
+  wzLangs=[];
   wzStep=1; // "Configure schedule" — visual step 2
   showView('v-add',null);
   updWz();
@@ -2617,6 +3137,7 @@ function renderCfgPanel(id){
     {k:'pubAnnounce', lbl:'Public announcement',  col:'#8A5100'},
     {k:'clientComm',  lbl:'Client communication', col:'#A81919'},
     {k:'qc',          lbl:'Quality control',      col:'#1756A3'},
+    {k:'icomDate',    lbl:'ICOM date',            col:'#7C3AED'},
   ];
 
   // Derive current freq from monthly schedule
@@ -2787,7 +3308,7 @@ function saveCfg(id){
   }
 
   // Dates
-  var DATE_KEYS=['effective','selection','weightFreeze','pubAnnounce','clientComm','qc'];
+  var DATE_KEYS=['effective','selection','weightFreeze','pubAnnounce','clientComm','qc','icomDate'];
   DATE_KEYS.forEach(function(k){
     var el=document.getElementById('cfg-date-'+k);
     if(el&&el.value) x.dates[k]=el.value;
@@ -2817,7 +3338,6 @@ function saveCfg(id){
   }
 
   renderRepo();
-  renderAssign();
   renderCfgList();
   renderCfgPanel(id);
   toast('Configuration saved for '+x.name.split(' ').slice(0,3).join(' ')+'…','ok');
