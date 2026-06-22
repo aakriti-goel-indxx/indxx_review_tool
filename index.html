@@ -79,6 +79,7 @@ td{padding:9px 10px;border-bottom:1px solid var(--b0);vertical-align:middle;font
 tbody tr:last-child td{border-bottom:none}
 tbody tr{cursor:pointer;transition:background .1s}.tbody tr:hover{background:var(--c1)}.exp-parent{background:var(--inkl)!important}
 .exp-row td{padding:0;background:var(--c1)}.exp-inner{padding:14px 16px 14px 34px;border-top:1px solid var(--b1)}
+.repo-row-link:hover td{background:var(--inkl)}
 .pg-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-top:1px solid var(--b0);font-size:11px;color:var(--t2)}
 .pg-btns{display:flex;gap:3px}
 .pg-b{width:26px;height:26px;border-radius:var(--r4);border:1px solid var(--b1);background:var(--c0);color:var(--t1);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
@@ -732,20 +733,36 @@ tr:hover .act-btns{opacity:1}
 <!-- ══ MODALS ══ -->
 <!-- INDEX DETAIL -->
 <div class="ov" id="ov-detail">
-  <div class="modal mw-full" style="max-height:90vh;display:flex;flex-direction:column;padding:0">
-    <div class="mh" style="flex-shrink:0">
-      <div style="flex:1;min-width:0"><div id="det-title" class="mh-t" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div><div id="det-sub" class="mh-s"></div></div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><div id="det-stage-badge"></div><button class="mclose" onclick="closeOv('ov-detail')">&#10005;</button></div>
+  <div class="modal mw-xl" style="max-height:94vh;display:flex;flex-direction:column;padding:0;width:min(1100px,96vw)">
+    <!-- Header: index name + meta + stage + quick actions -->
+    <div class="mh" style="flex-shrink:0;padding:14px 20px 10px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          <div id="det-title" class="mh-t" style="font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px"></div>
+          <div id="det-stage-badge" style="flex-shrink:0"></div>
+          <div id="det-rmb-badge" style="flex-shrink:0"></div>
+        </div>
+        <div id="det-sub" class="mh-s" style="font-size:11px;color:var(--t2)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div id="det-quick-actions"></div>
+        <button class="mclose" onclick="closeOv('ov-detail')">&#10005;</button>
+      </div>
     </div>
-    <div class="det-shell" style="flex:1;overflow:hidden">
-      <nav class="det-nav">
-        <button class="det-nav-item on" data-tab="info" onclick="detTab('info',this)"><span class="det-nav-icon">&#128196;</span>Index info</button>
-        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">&#128100;</span>Dates and Assignments</button>
-        <button class="det-nav-item" data-tab="events" onclick="detTab('events',this)"><span class="det-nav-icon">&#9889;</span>Special events</button>
+    <div class="det-shell" style="flex:1;overflow:hidden;display:flex">
+      <nav class="det-nav" style="width:170px">
+        <button class="det-nav-item on" data-tab="overview" onclick="detTab('overview',this)"><span class="det-nav-icon">🏠</span>Overview</button>
+        <button class="det-nav-item" data-tab="clients" onclick="detTab('clients',this)"><span class="det-nav-icon">👥</span>Clients &amp; Versions</button>
+        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">📅</span>Dates &amp; Assignments</button>
+        <button class="det-nav-item" data-tab="addlinfo" onclick="detTab('addlinfo',this)"><span class="det-nav-icon">📋</span>Additional Info</button>
+        <button class="det-nav-item" data-tab="events" onclick="detTab('events',this)"><span class="det-nav-icon">⚡</span>Special Events</button>
       </nav>
       <div class="det-content" id="det-content"></div>
     </div>
-    <div class="mf" style="flex-shrink:0"><button class="btn btn-ghost" onclick="closeOv('ov-detail')">Close</button><button class="btn btn-primary" onclick="saveDetChanges()">Save changes</button></div>
+    <div class="mf" style="flex-shrink:0;padding:10px 20px">
+      <button class="btn btn-ghost" onclick="closeOv('ov-detail')">Close</button>
+      <button class="btn btn-primary" onclick="saveDetChanges()">Save changes</button>
+    </div>
   </div>
 </div>
 <!-- RBAC -->
@@ -969,7 +986,7 @@ function seedRepo(){
 
 /* ── REPO RENDER ── */
 let rFilter='all',rQ='',rSort={col:'name',dir:'asc'},rPage=1,expRow=null;
-const COLS=[{k:'name',l:'Index name',w:'19%',s:1},{k:'_tickers',l:'Default version',w:'9%',s:0},{k:'label',l:'Label',w:'6%',s:1},{k:'_client',l:'Client',w:'10%',s:1},{k:'contract',l:'Contract',w:'8%',s:1},{k:'agent',l:'Agent',w:'7%',s:1},{k:'_revtype',l:'Review type',w:'9%',s:0},{k:'_effdate',l:'Upcoming date',w:'8%',s:1},{k:'_analyst',l:'Analyst',w:'9%',s:1},{k:'_peer',l:'Peer analyst',w:'9%',s:1},{k:'stage',l:'Stage',w:'8%',s:1},{k:'_act',l:'',w:'5%',s:0}];
+const COLS=[{k:'name',l:'Index name',w:'18%',s:1},{k:'_tickers',l:'Default version',w:'9%',s:0},{k:'label',l:'Label',w:'6%',s:1},{k:'_client',l:'Client',w:'10%',s:1},{k:'contract',l:'Contract',w:'6%',s:1},{k:'agent',l:'Agent',w:'6%',s:1},{k:'_revtype',l:'Review types',w:'10%',s:0},{k:'_currtype',l:'Current review',w:'8%',s:0},{k:'_effdate',l:'Upcoming date',w:'8%',s:1},{k:'_analyst',l:'Analyst',w:'9%',s:1},{k:'_peer',l:'Peer analyst',w:'8%',s:1},{k:'stage',l:'Stage',w:'7%',s:1},{k:'_act',l:'',w:'5%',s:0}];
 const PAGE=20;
 
 function labelTag(l){
@@ -981,6 +998,46 @@ function rtPills(rts){
   const MAP={Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review','Monthly Review':'rt-review'};
   return(rts||[]).slice(0,2).map(r=>`<span class="rt-pill ${MAP[r]||'rt-other'}">${r}</span>`).join('');
 }
+// Full review-type pills including Fast Entry and Special Rebalance when configured,
+// since those are real event types the index runs — not showing them was a gap.
+function rtPillsFull(x){
+  const MAP={Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review','Monthly Review':'rt-review'};
+  const types=(x.reviewTypes||[]).slice(0,3).map(r=>`<span class="rt-pill ${MAP[r]||'rt-other'}" title="${r}">${r}</span>`);
+  if(x.hasFast)types.push('<span class="rt-pill" style="background:var(--warnl);color:var(--warnt)" title="Fast Entry configured">FE</span>');
+  if(x.hasSpec)types.push('<span class="rt-pill" style="background:var(--errl);color:var(--errt)" title="Special Rebalance configured">SR</span>');
+  return types.join('');
+}
+// Returns the review type(s) active in the current or next upcoming scheduled month.
+// "Current" means: starting from today's month, walk forward (cyclically) until we
+// find a month that has a scheduled entry in x.monthly — that's what's coming up next.
+// This gives a single meaningful answer regardless of whether this month has a review.
+function currentReviewType(x){
+  const monthly=x.monthly||{};
+  if(!Object.keys(monthly).length)return null;
+  const today=new Date();
+  const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const curM=today.getMonth(); // 0-based
+  // Walk up to 12 months forward from today's month to find the next scheduled one
+  for(let offset=0;offset<12;offset++){
+    const mAbbr=MONS[(curM+offset)%12];
+    if(monthly[mAbbr]){
+      const types=monthly[mAbbr].split(',').map(t=>t.trim());
+      return{month:mAbbr,types:types,isCurrent:offset===0};
+    }
+  }
+  return null;
+}
+// Renders the compact "Current review" cell: the type(s) for the current/next month
+// plus a faint month label so the context is clear at a glance.
+function currentReviewCell(x){
+  const info=currentReviewType(x);
+  if(!info)return'<span style="color:var(--t3);font-size:11px">—</span>';
+  const MAP={Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review'};
+  const pills=info.types.map(t=>`<span class="rt-pill ${MAP[t]||'rt-other'}" style="font-size:8px">${t}</span>`).join('');
+  const monthLbl=`<div style="font-size:9px;color:var(--t3);margin-top:2px">${info.isCurrent?'This month':info.month}</div>`;
+  return`<div>${pills}${monthLbl}</div>`;
+}
+
 
 /* ── VERSION / CLIENT-LICENSE PRESENTATION HELPERS ── */
 // Pick one default version to keep the repository at one row per index: PR > TR > NTR.
@@ -1204,6 +1261,7 @@ function renderRepo(){
   function getVal(x){
     if(sk==='_client')return(x.clients[0]||'').toLowerCase();
     if(sk==='_effdate'){var nd=nextDateInfo(x);return nd?nd.val:'';}
+    if(sk==='_currtype'){var ct=currentReviewType(x);return ct?(ct.month+ct.types[0]).toLowerCase():'';}
     if(sk==='_analyst'){var a=getAsgn(x.id,x.rmb);return anName(a.analyst).toLowerCase();}
     if(sk==='_peer'){var a=getAsgn(x.id,x.rmb);return anName(a.peer).toLowerCase();}
     var v=x[sk]||'';return typeof v==='string'?v.toLowerCase():v;
@@ -1225,21 +1283,22 @@ function renderRepo(){
   mkb('›',rPage+1,rPage>=pages);
 
   const tbody=document.getElementById('repo-tbody');
-  if(!slice.length){tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--t2)"><div style="font-size:28px;margin-bottom:8px">🔍</div><strong>No indices match</strong><div style="font-size:11px;margin-top:4px">Try adjusting your filters or search.</div></td></tr>`;return;}
+  if(!slice.length){tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--t2)"><div style="font-size:28px;margin-bottom:8px">🔍</div><strong>No indices match</strong><div style="font-size:11px;margin-top:4px">Try adjusting your filters or search.</div></td></tr>`;return;}
 
   tbody.innerHTML=slice.map(x=>{
     const asgn=getAsgn(x.id,x.rmb);
     const isExp=expRow===x.id;
     const defTk=defaultTicker(x);
     const otherCount=(x.tickers||[]).length-(defTk?1:0);
-    return`<tr onclick="toggleExpand('${x.id}')" class="${isExp?'exp-parent':''}">
+    return`<tr onclick="openDet('${x.id}')" class="repo-row-link" style="cursor:pointer">
       <td style="max-width:0"><span style="font-size:12px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${x.name}">${x.name}</span></td>
       <td><div class="tickers-compact">${defTk?`<div class="tk-row"><span class="tk-type">${defTk.type}</span>${defTk.ticker}</div>`:'<span style="color:var(--t3)">—</span>'}${otherCount>0?`<div style="font-size:9px;color:var(--ink);font-weight:600;cursor:pointer" title="Click row to see other versions">+${otherCount} version${otherCount>1?'s':''}</div>`:''}${etfBadge(x)?`<div style="margin-top:2px">${etfBadge(x)}</div>`:''}</div></td>
       <td>${labelTag(x.label)}</td>
       <td><div class="client-primary" title="${x.clients.join(', ')}">${x.clients[0]||'—'}</div>${x.clients.length>1?`<div class="client-more">+${x.clients.length-1} more</div>`:''}</td>
       <td style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.contract||'—'}</td>
       <td style="font-size:11px;color:var(--t1)">${x.agent||'—'}</td>
-      <td><div class="rt-pills">${rtPills(x.reviewTypes)}</div></td>
+      <td><div class="rt-pills">${rtPillsFull(x)}</div></td>
+      <td>${currentReviewCell(x)}</td>
       <td>${(function(){var nd=nextDateInfo(x);if(!nd)return'<span style="color:var(--t3);font-size:11px">—</span>';return'<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;font-weight:700;color:'+nd.col+';background:'+nd.col+'14;border:1px solid '+nd.col+'33;border-radius:4px;padding:1px 6px;width:fit-content">'+nd.lbl+'</span><span style="font-size:11px;font-family:var(--fm);color:var(--t1)">'+nd.val+'</span></div>';})()}</td>
       <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.analyst)}<span style="font-size:11px">${anName(asgn.analyst)}</span></div></td>
       <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.peer)}<span style="font-size:11px">${anName(asgn.peer)}</span></div></td>
@@ -1249,8 +1308,7 @@ function renderRepo(){
         ${getPerms().asgn?`<div class="ibt ibt-del" title="Remove" onclick="removeIdx('${x.id}')">✕</div>`:''}
       </div></td>
     </tr>
-    ${isExp?`<tr class="exp-row"><td colspan="12"><div class="exp-inner">${renderExpand(x,asgn)}</div></td></tr>`:''}`;
-  }).join('');
+    ${''/* expanded row removed — clicking opens full detail modal */}`;  }).join('');
   document.getElementById('assign-badge').textContent=REPO.filter(x=>x.rmb==='Review').length;
 }
 
@@ -1307,11 +1365,15 @@ function openDetTab(id,tab){
 }
 
 function renderDetModal(tab){
-  tab=tab||'info';
+  tab=tab||'overview';
   var x=REPO.find(function(r){return r.id===detId;});if(!x)return;
   document.getElementById('det-title').textContent=x.name;
-  document.getElementById('det-sub').textContent=x.label+' · '+x.agent+' · '+(x.rmb==='Review'?'Review managed':'Ops managed');
+  document.getElementById('det-sub').textContent=x.label+' · '+x.agent+' · '+x.contract;
   var sb=document.getElementById('det-stage-badge');if(sb)sb.innerHTML=sp(x.stage||'To Start');
+  var rb=document.getElementById('det-rmb-badge');if(rb)rb.innerHTML=x.rmb==='Review'?'<span class="tag tag-rev">Review managed</span>':'<span class="tag tag-ops">Ops managed</span>';
+  var qa=document.getElementById('det-quick-actions');
+  if(qa&&getPerms().asgn)qa.innerHTML='<button class="btn btn-sm btn-ghost" onclick="openCfgWizard(\''+detId+'\')">✎ Edit config</button>';
+  else if(qa)qa.innerHTML='';
   document.querySelectorAll('#ov-detail .det-nav-item').forEach(function(b){b.classList.toggle('on',b.dataset.tab===tab);});
   detTab(tab,null,x);
 }
@@ -1320,9 +1382,12 @@ function detTab(tab,btn,xObj){
   var x=xObj||REPO.find(function(r){return r.id===detId;});if(!x)return;
   var pane=document.getElementById('det-content');if(!pane)return;
   pane.innerHTML='';
-  if(tab==='info')renderDetInfo(x,pane);
+  if(tab==='overview')renderDetOverview(x,pane);
+  else if(tab==='clients')renderDetClients(x,pane);
   else if(tab==='analysts')renderDetAn(detId,pane);
+  else if(tab==='addlinfo')renderDetAddlInfo(x,pane);
   else if(tab==='events')renderDetEvts(detId,pane);
+  else if(tab==='info')renderDetInfo(x,pane); // legacy fallback
 }
 function saveDetChanges(){closeOv('ov-detail');toast('Changes saved','ok');}
 function mTab(pre,tab,el){
@@ -1331,9 +1396,134 @@ function mTab(pre,tab,el){
   el.closest('.mtabs').querySelectorAll('.mtab').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');
 }
+function renderDetOverview(x,pane){
+  pane=pane||document.getElementById('det-content');
+  const asgn=getAsgn(x.id,x.rmb);
+  const d=x.dates||{};
+  const curr=currentReviewType(x);
+  const nd=nextDateInfo(x);
+  const sched=scheduleByType(x);
+  const canMgr=getPerms().asgn;
+  const canE=canEdit(x.rmb)&&canMgr;
+  // ── Stat strip ──
+  const stats=[
+    {l:'Live date',v:x.liveDate||'—',fm:true},
+    {l:'Calc type',v:x.calcType||'—'},
+    {l:'Contract',v:x.contract||'—'},
+    {l:'Agent',v:x.agent||'—'},
+    {l:'Label',v:labelTag(x.label),html:true},
+    {l:'ETF',v:(x.etf||'—')+(etfBadge(x)?' '+etfBadge(x):''),html:true},
+  ];
+  const statStrip=stats.map(s=>`<div style="padding:10px 14px;border:1px solid var(--b1);border-radius:var(--r8);background:var(--c0)"><div class="exp-l" style="margin-bottom:4px">${s.l}</div><div style="font-size:12px;font-weight:600;${s.fm?'font-family:var(--fm)':''}">${s.html?s.v:s.v}</div></div>`).join('');
+  // ── Schedule ──
+  const schedHtml=sched.length?sched.map(r=>`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;font-weight:700;color:var(--ink);min-width:86px;flex-shrink:0">${r.abbr}:</span><span style="font-size:11px;color:var(--t1)">${r.months.join(', ')}</span></div>`).join(''):'<span style="color:var(--t3);font-size:12px">Not configured</span>';
+  // ── Key dates (upcoming cycle) ──
+  const DATE_DISPLAY=[['effective','Effective','#166B0F'],['selection','Selection','#4B35CC'],['weightFreeze','Wt. Freeze','#0B7160'],['qc','QC','#1756A3'],['icomDate','ICOM','#7C3AED'],['pubAnnounce','Pub. Announce','#8A5100'],['clientComm','Client Comm','#A81919']];
+  const opt=getOptionalDates(x);
+  const visibleDates=DATE_DISPLAY.filter(([k])=>['effective','selection','weightFreeze','pubAnnounce','clientComm'].includes(k)||opt[k]||opt[k==='qc'?'qc':k]);
+  const dateCards=DATE_DISPLAY.filter(([k])=>{
+    if(['effective','selection','weightFreeze','pubAnnounce','clientComm'].includes(k))return true;
+    return opt[k];
+  }).map(([k,lbl,c])=>`<div style="padding:8px 10px;border:1px solid var(--b1);border-left:3px solid ${c};border-radius:var(--r6);background:var(--c0)"><div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:2px">${lbl}</div><div style="font-family:var(--fm);font-size:12px;font-weight:700">${d[k]||'—'}</div></div>`).join('');
+  pane.innerHTML=`
+    <!-- Stat strip -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">${statStrip}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <!-- Current review + upcoming date highlight -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+            <div class="exp-s" style="margin-bottom:8px">Current review type</div>
+            ${curr?`<div class="rt-pills">${curr.types.map(t=>`<span class="rt-pill ${({Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review'}[t]||'rt-other')}">${t}</span>`).join('')}</div><div style="font-size:10px;color:var(--t3);margin-top:4px">${curr.isCurrent?'This month':curr.month}</div>`:'<span style="color:var(--t3);font-size:12px">None this cycle</span>'}
+          </div>
+          <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+            <div class="exp-s" style="margin-bottom:8px">Next upcoming date</div>
+            ${nd?`<span style="font-size:9px;font-weight:700;color:${nd.col};background:${nd.col}14;border:1px solid ${nd.col}33;border-radius:4px;padding:1px 6px">${nd.lbl}</span><div style="font-family:var(--fm);font-size:14px;font-weight:700;margin-top:6px;color:var(--t0)">${nd.val}</div>`:'<span style="color:var(--t3);font-size:12px">—</span>'}
+          </div>
+        </div>
+        <!-- Schedule -->
+        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+          <div class="exp-s" style="margin-bottom:8px">Schedule</div>
+          ${schedHtml}
+          ${x.hasFast||x.hasSpec?`<div style="margin-top:8px;display:flex;gap:6px">${x.hasFast?'<span class="rt-pill" style="background:var(--warnl);color:var(--warnt)">Fast Entry configured</span>':''}${x.hasSpec?'<span class="rt-pill" style="background:var(--errl);color:var(--errt)">Special Rebalance configured</span>':''}</div>`:''}
+        </div>
+        <!-- Analysts -->
+        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+          <div class="exp-s" style="margin-bottom:8px">Current assignment</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="padding:10px;background:var(--c1);border-radius:var(--r6)">
+              <div style="font-size:9px;color:var(--t3);font-weight:700;margin-bottom:6px">${x.rmb==='Review'?'PRIMARY ANALYST':'ANALYST'}</div>
+              <div style="display:flex;align-items:center;gap:8px">${anAv(asgn.analyst,32)}<div><div style="font-size:13px;font-weight:700">${anName(asgn.analyst)}</div></div></div>
+            </div>
+            ${x.rmb==='Review'?`<div style="padding:10px;background:var(--c1);border-radius:var(--r6)"><div style="font-size:9px;color:var(--t3);font-weight:700;margin-bottom:6px">PEER REVIEWER</div><div style="display:flex;align-items:center;gap:8px">${anAv(asgn.peer,32)}<div><div style="font-size:13px;font-weight:700">${anName(asgn.peer)}</div></div></div></div>`:'<div style="padding:10px;background:var(--c1);border-radius:var(--r6);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px">N/A — Ops managed</div>'}
+          </div>
+          <div style="margin-top:10px"><button class="btn btn-sm btn-ghost" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))">📅 View Dates &amp; Assignments →</button></div>
+        </div>
+      </div>
+      <!-- Right column: key dates -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="exp-s">Key dates — upcoming cycle</div>
+            ${canE?`<button class="btn btn-sm btn-ghost" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))" style="font-size:10px">Edit →</button>`:''}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${dateCards}</div>
+        </div>
+        <!-- Stage tracker -->
+        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+          <div class="exp-s" style="margin-bottom:8px">Stage</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            ${STAGES.map((s,i)=>{const ci=STAGES.indexOf(x.stage||'To Start');return`<div onclick="event.stopPropagation();setDetStage('${x.id}','${s}')" style="padding:5px 10px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ${s===x.stage?'var(--ink)':'var(--b1)'};background:${s===x.stage?'var(--ink)':i<ci?'var(--inkl)':'var(--c1)'};color:${s===x.stage?'#fff':i<ci?'var(--inkt)':'var(--t2)'};transition:all .15s">${s}</div>`;}).join('')}
+          </div>
+          ${canMgr?'<div style="font-size:10px;color:var(--t3);margin-top:8px">Click a stage to update</div>':''}
+        </div>
+        <!-- Review types full list -->
+        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
+          <div class="exp-s" style="margin-bottom:8px">All review types configured</div>
+          <div class="rt-pills" style="gap:5px">${rtPillsFull(x)||'<span style="color:var(--t3);font-size:12px">None</span>'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+function setDetStage(id,s){
+  if(!getPerms().asgn){toast('Only managers can change the stage','err');return;}
+  const x=REPO.find(r=>r.id===id);if(!x)return;
+  x.stage=s;renderRepo();renderDetModal('overview');toast('Stage updated to '+s,'ok');
+}
+function renderDetClients(x,pane){
+  pane=pane||document.getElementById('det-content');
+  const tks=x.tickers.length?x.tickers.map(t=>`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r8);margin:3px"><span style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase">${t.type}</span><span style="font-family:var(--fm);font-weight:700;font-size:13px">${t.ticker}</span></div>`).join(''):'<span style="color:var(--t3)">No tickers</span>';
+  pane.innerHTML=`<div class="det-section-title">Clients &amp; Versions</div>
+    <div class="info-box ib-blue" style="margin-bottom:14px"><span>&#8505;</span><span>All data below is auto-populated from the ICAL Master Calendar feed. Start date shows when Indxx first started sending data to each client.</span></div>
+    <div style="border:1px solid var(--b1);border-radius:var(--r10);overflow:hidden;margin-bottom:18px">${clientVersionTable(x)}</div>
+    <div class="det-section-title">Tickers by version</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;padding:10px;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10)">${tks}</div>`;
+}
+function renderDetAddlInfo(x,pane){
+  pane=pane||document.getElementById('det-content');
+  const row=(lbl,val,mono)=>`<div style="display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;color:var(--t3);width:180px;flex-shrink:0">${lbl}</span><span style="font-size:12px;font-weight:600;${mono?'font-family:var(--fm)':''}">${val||'<span style="color:var(--t3);font-weight:400">—</span>'}</span></div>`;
+  const langs=(x.methodLang&&x.methodLang.length)?x.methodLang.map(l=>`<span class="tag tag-bl" style="margin:2px">${l}</span>`).join(''):'<span style="color:var(--t3)">—</span>';
+  const takenName=x.handoverTakenBy?USERS.find(u=>u.id===x.handoverTakenBy)?.name||x.handoverTakenBy:null;
+  pane.innerHTML=`<div class="det-section-title">Additional information</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
+        <div class="fsec" style="margin-top:0">Classification</div>
+        ${row('ITICS',x.itics?`<span class="tag ${x.itics==='Yes'?'tag-rev':'tag-ca'}">${x.itics}</span>`:null,false)}
+        ${row('Index family',x.indexFamily)}
+        <div style="padding:8px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;color:var(--t3);display:block;margin-bottom:4px">Methodology language</span><div style="display:flex;flex-wrap:wrap">${langs}</div></div>
+      </div>
+      <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
+        <div class="fsec" style="margin-top:0">Handover</div>
+        ${row('Taken by',takenName)}
+        ${row('Given by',x.handoverGivenBy)}
+        ${row('Handover date',x.handoverDate,true)}
+      </div>
+    </div>`;
+}
+
 function renderDetInfo(x,pane){
   pane=pane||document.getElementById('det-content');
-  const clients=x.clients.map(c=>`<span class="tag tag-bl" style="margin:2px">${c}</span>`).join('');
   const tickers=x.tickers.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 9px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r6);margin-bottom:4px"><span style="font-size:9px;font-weight:700;color:var(--t2)">${t.type}</span><span style="font-family:var(--fm);font-weight:600">${t.ticker}</span></div>`).join('');
   const mevts=renderScheduleByType(x);
   pane.innerHTML=`<div class="det-section-title">Index information</div><div class="fg2">
@@ -1350,7 +1540,7 @@ function renderDetInfo(x,pane){
       <div class="fsec" style="margin-top:0">Tool-managed</div>
       <div class="fg"><div class="exp-l">Stage</div>${sp(x.stage||'To Start')}</div>
       <div class="fg"><div class="exp-l">Review Managed By</div>${x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">Operations</span>'}</div>
-      <div class="fg"><div class="exp-l">Review types</div><div class="rt-pills" style="margin-top:3px">${rtPills(x.reviewTypes)}</div></div>
+      <div class="fg"><div class="exp-l">Review types</div><div class="rt-pills" style="margin-top:3px">${rtPillsFull(x)}</div></div>
       <div class="fg"><div class="exp-l">Schedule</div><div style="margin-top:4px">${mevts||'—'}</div></div>
     </div>
   </div>`;
