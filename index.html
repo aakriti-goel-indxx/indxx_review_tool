@@ -135,6 +135,12 @@ tr:hover .act-btns{opacity:1}
 .det-nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 .det-content{flex:1;min-width:0;padding:20px 24px;overflow-y:auto}
 .det-section-title{font-size:13px;font-weight:800;color:var(--t0);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--b1)}
+.det-card{background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:14px 14px 12px}
+.det-card-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:10px}
+.kv-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--b0)}
+.kv-row:last-child{border-bottom:0}
+.kv-lbl{font-size:10px;color:var(--t3);width:80px;flex-shrink:0;padding-top:1px;line-height:1.3}
+.kv-val{font-size:11px;font-weight:600;color:var(--t0);flex:1;min-width:0;line-height:1.4}
 .det-content::-webkit-scrollbar{width:5px}.det-content::-webkit-scrollbar-thumb{background:var(--b1);border-radius:10px}
 /* ── CALENDAR VIEW ── */
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--b1);border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden}
@@ -410,9 +416,9 @@ tr:hover .act-btns{opacity:1}
           </div>
         </div>
         <div class="ical-list" id="ical-list"></div>
-        <div id="ical-sel-info" style="display:none;margin-top:12px;padding:12px;background:var(--okl);border:1px solid rgba(22,107,15,.2);border-radius:var(--r8)">
-          <div style="font-size:11px;font-weight:700;color:var(--okt);margin-bottom:8px">✓ Selected — auto-populated from ICAL:</div>
-          <div id="ical-autofill" class="fg3"></div>
+        <div id="ical-sel-info" style="display:none;margin-top:12px;padding:14px 16px;background:var(--okl);border:1px solid rgba(22,107,15,.25);border-radius:var(--r10)">
+          <div style="font-size:9px;font-weight:700;color:var(--okt);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">✓ Selected — auto-populated from ICAL</div>
+          <div id="ical-autofill"></div>
         </div>
       </div>
       <div class="wz-footer"><div></div><button class="btn btn-primary" onclick="wzNext(0)">Next: Configure schedule →</button></div>
@@ -525,7 +531,7 @@ tr:hover .act-btns{opacity:1}
     <!-- Step 3 -->
     <div class="wz-panel" id="wzp3">
       <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:20px">
-        <div class="fsec" style="margin-top:0">Index details</div>
+        <div class="fsec" style="margin-top:0">Index details <span class="req">*</span></div>
         <div class="fg2">
           <div class="fg"><label class="flbl">Indxx Thematic Industry Classification System (ITICS)</label>
             <select class="fsel" id="wz-itics"><option value="No">No</option><option value="Yes">Yes</option></select>
@@ -553,9 +559,15 @@ tr:hover .act-btns{opacity:1}
           <div class="fg"><label class="flbl">Handover date</label><input type="date" class="finp" id="wz-handover-date" disabled style="background:var(--c1);color:var(--t2)"><div class="cfg-hint">Auto-populated from this index's Live Date in ICAL</div></div>
           <div class="fg"></div>
         </div>
-        <div class="fsec">Review assignment</div>
+        <div class="fsec">Internal governance dates</div>
+        <div class="info-box ib-blue" style="margin-bottom:10px"><span>ℹ</span><span>QC and ICOM dates are <strong>internal governance milestones</strong> — not part of the index methodology schedule. Set how many trading days before the effective date each should occur.</span></div>
         <div class="fg2">
-          <div class="fg"><label class="flbl">Primary analyst</label>
+          <div class="fg"><label class="flbl">QC date — T-N before effective</label><input type="number" class="finp" id="wz-qc-offset" min="1" max="30" value="" placeholder="e.g. 4"><div class="cfg-hint">Leave blank to omit QC date tracking for this index.</div></div>
+          <div class="fg"><label class="flbl">ICOM date — T-N before effective</label><input type="number" class="finp" id="wz-icom-offset" min="1" max="30" value="" placeholder="e.g. 3"><div class="cfg-hint">Leave blank to omit ICOM date tracking for this index.</div></div>
+        </div>
+        <div class="fsec">Review assignment <span class="req">*</span></div>
+        <div class="fg2">
+          <div class="fg"><label class="flbl">Primary analyst <span class="req">*</span></label>
             <select class="fsel" id="wz-primary-analyst"><option value="">— select —</option></select>
           </div>
           <div class="fg"><label class="flbl">Peer review analyst</label>
@@ -733,36 +745,31 @@ tr:hover .act-btns{opacity:1}
 <!-- ══ MODALS ══ -->
 <!-- INDEX DETAIL -->
 <div class="ov" id="ov-detail">
-  <div class="modal mw-xl" style="max-height:94vh;display:flex;flex-direction:column;padding:0;width:min(1100px,96vw)">
-    <!-- Header: index name + meta + stage + quick actions -->
-    <div class="mh" style="flex-shrink:0;padding:14px 20px 10px">
+  <div class="modal" style="width:min(1020px,96vw);max-height:92vh;display:flex;flex-direction:column;padding:0">
+    <div class="mh" style="flex-shrink:0;padding:14px 20px 12px;gap:12px">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-          <div id="det-title" class="mh-t" style="font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px"></div>
-          <div id="det-stage-badge" style="flex-shrink:0"></div>
-          <div id="det-rmb-badge" style="flex-shrink:0"></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+          <div id="det-title" style="font-size:15px;font-weight:800;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:480px"></div>
+          <div id="det-label-badge"></div>
+          <div id="det-stage-badge"></div>
+          <div id="det-rmb-badge"></div>
         </div>
-        <div id="det-sub" class="mh-s" style="font-size:11px;color:var(--t2)"></div>
+        <div id="det-sub" style="font-size:11px;color:var(--t3)"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <div id="det-quick-actions"></div>
         <button class="mclose" onclick="closeOv('ov-detail')">&#10005;</button>
       </div>
     </div>
-    <div class="det-shell" style="flex:1;overflow:hidden;display:flex">
-      <nav class="det-nav" style="width:170px">
-        <button class="det-nav-item on" data-tab="overview" onclick="detTab('overview',this)"><span class="det-nav-icon">🏠</span>Overview</button>
-        <button class="det-nav-item" data-tab="clients" onclick="detTab('clients',this)"><span class="det-nav-icon">👥</span>Clients &amp; Versions</button>
-        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">📅</span>Dates &amp; Assignments</button>
-        <button class="det-nav-item" data-tab="addlinfo" onclick="detTab('addlinfo',this)"><span class="det-nav-icon">📋</span>Additional Info</button>
-        <button class="det-nav-item" data-tab="events" onclick="detTab('events',this)"><span class="det-nav-icon">⚡</span>Special Events</button>
+    <div class="det-shell" style="flex:1;overflow:hidden;display:flex;min-height:560px">
+      <nav class="det-nav" style="width:156px">
+        <button class="det-nav-item on" data-tab="overview" onclick="detTab('overview',this)"><span class="det-nav-icon">◈</span>Index</button>
+        <button class="det-nav-item" data-tab="analysts" onclick="detTab('analysts',this)"><span class="det-nav-icon">⊕</span>Dates &amp; Assignments</button>
+        <button class="det-nav-item" data-tab="events" onclick="detTab('events',this)"><span class="det-nav-icon">◇</span>Special Events</button>
       </nav>
-      <div class="det-content" id="det-content"></div>
+      <div class="det-content" id="det-content" style="padding:18px 22px"></div>
     </div>
-    <div class="mf" style="flex-shrink:0;padding:10px 20px">
-      <button class="btn btn-ghost" onclick="closeOv('ov-detail')">Close</button>
-      <button class="btn btn-primary" onclick="saveDetChanges()">Save changes</button>
-    </div>
+    <div class="mf" style="flex-shrink:0"><button class="btn btn-ghost" onclick="closeOv('ov-detail')">Close</button><button class="btn btn-primary" onclick="saveDetChanges()">Save changes</button></div>
   </div>
 </div>
 <!-- RBAC -->
@@ -822,14 +829,12 @@ const STAGE_CLS=['sp-0','sp-1','sp-2','sp-3','sp-4','sp-5','sp-6','sp-7','sp-8']
 function sp(s){const i=STAGES.indexOf(s);return`<span class="sp ${STAGE_CLS[i<0?0:i]}">${s||'To Start'}</span>`;}
 
 /* ── ASSIGNMENTS ── */
-const ASGN={};let rrC=0;
+const ASGN={};
+// Returns the assignment for an index. If no explicit assignment has been set
+// (either via the wizard or the Assignment panel), returns null slots rather
+// than auto-assigning — managers must explicitly assign every index.
 function getAsgn(id,rmb){
-  if(!ASGN[id]){
-    const pool=rmb==='Operations'?OPS_ANALYSTS:REV_ANALYSTS;
-    if(!pool.length)return{analyst:null,peer:null};
-    ASGN[id]={analyst:pool[rrC%pool.length].id,peer:pool[(rrC+1)%pool.length].id};
-    rrC+=2;
-  }return ASGN[id];
+  return ASGN[id]||{analyst:null,peer:null};
 }
 
 /* ── PER-CYCLE DATES & ASSIGNMENTS (historical + future) ── */
@@ -926,7 +931,11 @@ function genDatesForCycle(x,year,month){
   const eff=new Date(year,MMAP[month],dayOfMonth);
   const f=function(d){return d.toISOString().slice(0,10);};
   const sub=function(d,n){const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
-  return{portfolioRecv:f(sub(eff,35)),effective:f(eff),selection:f(sub(eff,30)),prelim:f(sub(eff,6)),weightFreeze:f(sub(eff,5)),qc:f(sub(eff,4)),icomDate:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+  // Compute QC and ICOM dates from the index's own governance offsets (if set)
+  var result={portfolioRecv:f(sub(eff,35)),effective:f(eff),selection:f(sub(eff,30)),prelim:f(sub(eff,6)),weightFreeze:f(sub(eff,5)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+  if(x.qcOffset>0)result.qc=f(sub(eff,x.qcOffset));
+  if(x.icomOffset>0)result.icomDate=f(sub(eff,x.icomOffset));
+  return result;
 }
 function anAv(uid,sz=20){
   const u=USERS.find(x=>x.id===uid);
@@ -955,7 +964,7 @@ function genDates(x){
   const eff=new Date(ey,em,dayOfMonth);
   const f=function(d){return d.toISOString().slice(0,10);};
   const sub=function(d,n){const r=new Date(d);let c=0;while(c<n){r.setDate(r.getDate()-1);if(r.getDay()!==0&&r.getDay()!==6)c++;}return r;};
-  return{effective:f(eff),selection:f(sub(eff,30)),weightFreeze:f(sub(eff,5)),qc:f(sub(eff,4)),icomDate:f(sub(eff,3)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
+  return{effective:f(eff),selection:f(sub(eff,30)),weightFreeze:f(sub(eff,5)),pubAnnounce:f(sub(eff,2)),clientComm:f(sub(eff,1))};
 }
 function rmbForLabel(label){
   /* Business rule: label always determines RMB.
@@ -1367,13 +1376,14 @@ function openDetTab(id,tab){
 function renderDetModal(tab){
   tab=tab||'overview';
   var x=REPO.find(function(r){return r.id===detId;});if(!x)return;
+  // Header
   document.getElementById('det-title').textContent=x.name;
-  document.getElementById('det-sub').textContent=x.label+' · '+x.agent+' · '+x.contract;
+  document.getElementById('det-sub').textContent=(x.agent||'')+(x.contract?' · '+x.contract:'')+(x.liveDate?' · Live '+x.liveDate:'');
   var sb=document.getElementById('det-stage-badge');if(sb)sb.innerHTML=sp(x.stage||'To Start');
-  var rb=document.getElementById('det-rmb-badge');if(rb)rb.innerHTML=x.rmb==='Review'?'<span class="tag tag-rev">Review managed</span>':'<span class="tag tag-ops">Ops managed</span>';
+  var lb=document.getElementById('det-label-badge');if(lb)lb.innerHTML=labelTag(x.label);
+  var rb=document.getElementById('det-rmb-badge');if(rb)rb.innerHTML=x.rmb==='Review'?'<span class="tag tag-rev" style="font-size:10px">Review managed</span>':'<span class="tag tag-ops" style="font-size:10px">Ops managed</span>';
   var qa=document.getElementById('det-quick-actions');
-  if(qa&&getPerms().asgn)qa.innerHTML='<button class="btn btn-sm btn-ghost" onclick="openCfgWizard(\''+detId+'\')">✎ Edit config</button>';
-  else if(qa)qa.innerHTML='';
+  if(qa)qa.innerHTML=getPerms().asgn?'<button class="btn btn-sm btn-ghost" onclick="closeOv(\'ov-detail\');openCfgWizard(\''+detId+'\')">✎ Edit config</button>':'';
   document.querySelectorAll('#ov-detail .det-nav-item').forEach(function(b){b.classList.toggle('on',b.dataset.tab===tab);});
   detTab(tab,null,x);
 }
@@ -1383,11 +1393,11 @@ function detTab(tab,btn,xObj){
   var pane=document.getElementById('det-content');if(!pane)return;
   pane.innerHTML='';
   if(tab==='overview')renderDetOverview(x,pane);
-  else if(tab==='clients')renderDetClients(x,pane);
   else if(tab==='analysts')renderDetAn(detId,pane);
-  else if(tab==='addlinfo')renderDetAddlInfo(x,pane);
   else if(tab==='events')renderDetEvts(detId,pane);
-  else if(tab==='info')renderDetInfo(x,pane); // legacy fallback
+  else if(tab==='info')renderDetOverview(x,pane); // legacy redirect
+  else if(tab==='clients')renderDetOverview(x,pane);
+  else if(tab==='addlinfo')renderDetOverview(x,pane);
 }
 function saveDetChanges(){closeOv('ov-detail');toast('Changes saved','ok');}
 function mTab(pre,tab,el){
@@ -1404,122 +1414,163 @@ function renderDetOverview(x,pane){
   const nd=nextDateInfo(x);
   const sched=scheduleByType(x);
   const canMgr=getPerms().asgn;
-  const canE=canEdit(x.rmb)&&canMgr;
-  // ── Stat strip ──
-  const stats=[
-    {l:'Live date',v:x.liveDate||'—',fm:true},
-    {l:'Calc type',v:x.calcType||'—'},
-    {l:'Contract',v:x.contract||'—'},
-    {l:'Agent',v:x.agent||'—'},
-    {l:'Label',v:labelTag(x.label),html:true},
-    {l:'ETF',v:(x.etf||'—')+(etfBadge(x)?' '+etfBadge(x):''),html:true},
-  ];
-  const statStrip=stats.map(s=>`<div style="padding:10px 14px;border:1px solid var(--b1);border-radius:var(--r8);background:var(--c0)"><div class="exp-l" style="margin-bottom:4px">${s.l}</div><div style="font-size:12px;font-weight:600;${s.fm?'font-family:var(--fm)':''}">${s.html?s.v:s.v}</div></div>`).join('');
-  // ── Schedule ──
-  const schedHtml=sched.length?sched.map(r=>`<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;font-weight:700;color:var(--ink);min-width:86px;flex-shrink:0">${r.abbr}:</span><span style="font-size:11px;color:var(--t1)">${r.months.join(', ')}</span></div>`).join(''):'<span style="color:var(--t3);font-size:12px">Not configured</span>';
-  // ── Key dates (upcoming cycle) ──
-  const DATE_DISPLAY=[['effective','Effective','#166B0F'],['selection','Selection','#4B35CC'],['weightFreeze','Wt. Freeze','#0B7160'],['qc','QC','#1756A3'],['icomDate','ICOM','#7C3AED'],['pubAnnounce','Pub. Announce','#8A5100'],['clientComm','Client Comm','#A81919']];
   const opt=getOptionalDates(x);
-  const visibleDates=DATE_DISPLAY.filter(([k])=>['effective','selection','weightFreeze','pubAnnounce','clientComm'].includes(k)||opt[k]||opt[k==='qc'?'qc':k]);
-  const dateCards=DATE_DISPLAY.filter(([k])=>{
-    if(['effective','selection','weightFreeze','pubAnnounce','clientComm'].includes(k))return true;
-    return opt[k];
-  }).map(([k,lbl,c])=>`<div style="padding:8px 10px;border:1px solid var(--b1);border-left:3px solid ${c};border-radius:var(--r6);background:var(--c0)"><div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:2px">${lbl}</div><div style="font-family:var(--fm);font-size:12px;font-weight:700">${d[k]||'—'}</div></div>`).join('');
+  const RTMAP={Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review'};
+
+  /* key-value row — consistent label/value display */
+  const kv=(l,v,extra)=>`<div class="kv-row"><span class="kv-lbl">${l}</span><span class="kv-val"${extra?' style="'+extra+'"':''}>${v!=null&&v!==''?v:'<span style="color:var(--t3);font-weight:400">—</span>'}</span></div>`;
+
+  /* dates: show core 5 always + any enabled optionals */
+  const coreKeys=['effective','selection','weightFreeze','pubAnnounce','clientComm'];
+  const DATE_DEF=[
+    ['effective','Effective date','#166B0F'],['selection','Selection date','#4B35CC'],
+    ['weightFreeze','Weight freeze','#0B7160'],['qc','QC date','#1756A3'],
+    ['icomDate','ICOM date','#7C3AED'],['pubAnnounce','Pub. announce','#8A5100'],
+    ['clientComm','Client comm.','#A81919'],['prelim','Prelim. comm.','#0B7160'],
+    ['portfolioRecv','Portfolio recv.','#A81919']
+  ];
+  const visibleDates=DATE_DEF.filter(([k])=>coreKeys.includes(k)||opt[k]);
+
+  /* schedule rows */
+  const schedHtml=sched.length
+    ?sched.map(r=>`<div class="kv-row"><span class="kv-lbl" style="color:var(--ink);font-weight:700">${r.abbr}</span><span class="kv-val">${r.months.join(', ')}</span></div>`).join('')
+    :'<span style="color:var(--t3);font-size:11px">Not configured</span>';
+
+  /* additional info (accordion) */
+  const langs=(x.methodLang&&x.methodLang.length)?x.methodLang.join(', '):'—';
+  const takenName=x.handoverTakenBy?USERS.find(u=>u.id===x.handoverTakenBy)?.name||x.handoverTakenBy:'—';
+
   pane.innerHTML=`
-    <!-- Stat strip -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">${statStrip}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-      <!-- Left column -->
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <!-- Current review + upcoming date highlight -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-            <div class="exp-s" style="margin-bottom:8px">Current review type</div>
-            ${curr?`<div class="rt-pills">${curr.types.map(t=>`<span class="rt-pill ${({Reconstitution:'rt-recon',Rebalance:'rt-rebal',Review:'rt-review','IPO Review':'rt-ipo','Theme Review':'rt-review'}[t]||'rt-other')}">${t}</span>`).join('')}</div><div style="font-size:10px;color:var(--t3);margin-top:4px">${curr.isCurrent?'This month':curr.month}</div>`:'<span style="color:var(--t3);font-size:12px">None this cycle</span>'}
-          </div>
-          <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-            <div class="exp-s" style="margin-bottom:8px">Next upcoming date</div>
-            ${nd?`<span style="font-size:9px;font-weight:700;color:${nd.col};background:${nd.col}14;border:1px solid ${nd.col}33;border-radius:4px;padding:1px 6px">${nd.lbl}</span><div style="font-family:var(--fm);font-size:14px;font-weight:700;margin-top:6px;color:var(--t0)">${nd.val}</div>`:'<span style="color:var(--t3);font-size:12px">—</span>'}
-          </div>
+  <!-- ① Status banner: the three most time-sensitive facts at a glance -->
+  <div style="display:flex;align-items:center;gap:16px;padding:10px 14px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:18px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase">Stage</span>
+      ${sp(x.stage||'To Start')}
+      ${canMgr?'<span style="font-size:9px;color:var(--t3)">(click stage pills in cards below to update)</span>':''}
+    </div>
+    <div style="width:1px;height:20px;background:var(--b1);flex-shrink:0"></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase">Current review</span>
+      ${curr?`<div class="rt-pills">${curr.types.map(t=>`<span class="rt-pill ${RTMAP[t]||'rt-other'}">${t}</span>`).join('')}</div><span style="font-size:10px;color:var(--t3)">${curr.isCurrent?'· this month':'· '+curr.month}</span>`:'<span style="font-size:11px;color:var(--t3)">—</span>'}
+    </div>
+    <div style="width:1px;height:20px;background:var(--b1);flex-shrink:0"></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase">Next date</span>
+      ${nd?`<span style="font-size:10px;font-weight:700;color:${nd.col};background:${nd.col}14;border:1px solid ${nd.col}33;border-radius:4px;padding:1px 6px">${nd.lbl}</span><span style="font-family:var(--fm);font-size:12px;font-weight:700;color:var(--t0)">${nd.val}</span>`:'<span style="font-size:11px;color:var(--t3)">—</span>'}
+    </div>
+  </div>
+
+  <!-- ② Two-column body -->
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px">
+
+    <!-- LEFT: ICAL facts -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <!-- Identity -->
+      <div class="det-card">
+        <div class="det-card-title">Identity <span style="font-weight:400;color:var(--t3)">(auto-populated from ICAL)</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          ${kv('Calc type',x.calcType)}
+          ${kv('Live date',x.liveDate,'font-family:var(--fm)')}
+          ${kv('Contract',x.contract)}
+          ${kv('Agent',x.agent)}
+          ${kv('ETF',(x.etf||'')+(etfBadge(x)?' '+etfBadge(x):''))}
+          ${kv('Label',labelTag(x.label))}
         </div>
-        <!-- Schedule -->
-        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-          <div class="exp-s" style="margin-bottom:8px">Schedule</div>
-          ${schedHtml}
-          ${x.hasFast||x.hasSpec?`<div style="margin-top:8px;display:flex;gap:6px">${x.hasFast?'<span class="rt-pill" style="background:var(--warnl);color:var(--warnt)">Fast Entry configured</span>':''}${x.hasSpec?'<span class="rt-pill" style="background:var(--errl);color:var(--errt)">Special Rebalance configured</span>':''}</div>`:''}
+        <div class="kv-row" style="margin-top:2px">
+          <span class="kv-lbl">Tickers</span>
+          <span class="kv-val" style="display:flex;flex-wrap:wrap;gap:4px">
+            ${x.tickers.map(t=>`<span style="font-family:var(--fm);font-size:10px;font-weight:700;padding:2px 7px;background:var(--c1);border:1px solid var(--b1);border-radius:4px"><span style="color:var(--t3);margin-right:2px;font-size:8px">${t.type}</span>${t.ticker}</span>`).join('')||'<span style="color:var(--t3)">—</span>'}
+          </span>
         </div>
-        <!-- Analysts -->
-        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-          <div class="exp-s" style="margin-bottom:8px">Current assignment</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div style="padding:10px;background:var(--c1);border-radius:var(--r6)">
-              <div style="font-size:9px;color:var(--t3);font-weight:700;margin-bottom:6px">${x.rmb==='Review'?'PRIMARY ANALYST':'ANALYST'}</div>
-              <div style="display:flex;align-items:center;gap:8px">${anAv(asgn.analyst,32)}<div><div style="font-size:13px;font-weight:700">${anName(asgn.analyst)}</div></div></div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="det-card">
+        <div class="det-card-title">Schedule</div>
+        ${schedHtml}
+        ${x.hasFast||x.hasSpec?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b0);display:flex;gap:5px;flex-wrap:wrap">${x.hasFast?'<span class="rt-pill" style="background:var(--warnl);color:var(--warnt)">Fast Entry</span>':''}${x.hasSpec?'<span class="rt-pill" style="background:var(--errl);color:var(--errt)">Special Rebalance</span>':''}</div>`:''}
+      </div>
+
+      <!-- Clients & versions -->
+      <div class="det-card" style="padding:0;overflow:hidden">
+        <div class="det-card-title" style="padding:12px 14px 8px;margin-bottom:0">Clients &amp; versions</div>
+        ${clientVersionTable(x)}
+      </div>
+
+    </div>
+
+    <!-- RIGHT: operational state -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <!-- Analysts -->
+      <div class="det-card">
+        <div class="det-card-title">Assigned to</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:var(--c1);border-radius:var(--r6)">
+            ${anAv(asgn.analyst,30)}
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--t3);margin-bottom:1px">${x.rmb==='Review'?'PRIMARY ANALYST':'ANALYST'}</div>
+              <div style="font-size:13px;font-weight:700">${anName(asgn.analyst)}</div>
             </div>
-            ${x.rmb==='Review'?`<div style="padding:10px;background:var(--c1);border-radius:var(--r6)"><div style="font-size:9px;color:var(--t3);font-weight:700;margin-bottom:6px">PEER REVIEWER</div><div style="display:flex;align-items:center;gap:8px">${anAv(asgn.peer,32)}<div><div style="font-size:13px;font-weight:700">${anName(asgn.peer)}</div></div></div></div>`:'<div style="padding:10px;background:var(--c1);border-radius:var(--r6);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:11px">N/A — Ops managed</div>'}
           </div>
-          <div style="margin-top:10px"><button class="btn btn-sm btn-ghost" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))">📅 View Dates &amp; Assignments →</button></div>
+          ${x.rmb==='Review'?`<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:var(--c1);border-radius:var(--r6)">${anAv(asgn.peer,30)}<div><div style="font-size:9px;font-weight:700;color:var(--t3);margin-bottom:1px">PEER REVIEWER</div><div style="font-size:13px;font-weight:700">${anName(asgn.peer)}</div></div></div>`:''}
+        </div>
+        <button class="btn btn-sm btn-ghost" style="width:100%;text-align:center;justify-content:center" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))">View cycle history &amp; override →</button>
+      </div>
+
+      <!-- Stage (manager-clickable) -->
+      <div class="det-card">
+        <div class="det-card-title">Stage${canMgr?' <span style="font-weight:400;color:var(--t3)">(click to update)</span>':''}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${STAGES.map((s,i)=>{
+            const ci=STAGES.indexOf(x.stage||'To Start');
+            const isOn=s===x.stage,isPast=i<ci;
+            return`<div onclick="${canMgr?`setDetStage('${x.id}','${s}')`:''}" style="padding:4px 10px;border-radius:10px;font-size:10px;font-weight:600;cursor:${canMgr?'pointer':'default'};border:1px solid ${isOn?'var(--ink)':'var(--b1)'};background:${isOn?'var(--ink)':isPast?'var(--inkl)':'var(--c1)'};color:${isOn?'#fff':isPast?'var(--inkt)':'var(--t2)'};">${s}</div>`;
+          }).join('')}
         </div>
       </div>
-      <!-- Right column: key dates -->
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <div class="exp-s">Key dates — upcoming cycle</div>
-            ${canE?`<button class="btn btn-sm btn-ghost" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))" style="font-size:10px">Edit →</button>`:''}
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${dateCards}</div>
+
+      <!-- Key dates -->
+      <div class="det-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="det-card-title" style="margin-bottom:0">Key dates — upcoming cycle</div>
+          <button class="btn btn-sm btn-ghost" style="font-size:10px" onclick="detTab('analysts',document.querySelector('[data-tab=analysts]'))">Edit →</button>
         </div>
-        <!-- Stage tracker -->
-        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-          <div class="exp-s" style="margin-bottom:8px">Stage</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px">
-            ${STAGES.map((s,i)=>{const ci=STAGES.indexOf(x.stage||'To Start');return`<div onclick="event.stopPropagation();setDetStage('${x.id}','${s}')" style="padding:5px 10px;border-radius:12px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid ${s===x.stage?'var(--ink)':'var(--b1)'};background:${s===x.stage?'var(--ink)':i<ci?'var(--inkl)':'var(--c1)'};color:${s===x.stage?'#fff':i<ci?'var(--inkt)':'var(--t2)'};transition:all .15s">${s}</div>`;}).join('')}
-          </div>
-          ${canMgr?'<div style="font-size:10px;color:var(--t3);margin-top:8px">Click a stage to update</div>':''}
-        </div>
-        <!-- Review types full list -->
-        <div style="padding:14px;border:1px solid var(--b1);border-radius:var(--r10);background:var(--c0)">
-          <div class="exp-s" style="margin-bottom:8px">All review types configured</div>
-          <div class="rt-pills" style="gap:5px">${rtPillsFull(x)||'<span style="color:var(--t3);font-size:12px">None</span>'}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${visibleDates.map(([k,lbl,c])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--b0)"><span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;display:inline-block"></span><span style="font-size:10px;color:var(--t2);min-width:110px">${lbl}</span><span style="font-family:var(--fm);font-size:11px;font-weight:600">${d[k]||'—'}</span></div>`).join('')}
         </div>
       </div>
-    </div>`;
+
+    </div>
+  </div>
+
+  <!-- ③ Additional info accordion -->
+  <details style="border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden">
+    <summary style="padding:9px 14px;font-size:11px;font-weight:700;color:var(--t2);cursor:pointer;background:var(--c1);user-select:none;display:flex;align-items:center;justify-content:space-between">
+      <span>Additional information</span>
+      <span style="font-weight:400;color:var(--t3);font-size:10px">ITICS · Index family · Methodology languages · Handover</span>
+    </summary>
+    <div style="padding:14px 16px;background:var(--c0);display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="det-card-title">Classification</div>
+        ${kv('ITICS',x.itics?`<span class="tag ${x.itics==='Yes'?'tag-rev':'tag-ca'}">${x.itics}</span>`:null)}
+        ${kv('Index family',x.indexFamily)}
+        ${kv('Languages',langs)}
+      </div>
+      <div>
+        <div class="det-card-title">Handover</div>
+        ${kv('Taken by',takenName)}
+        ${kv('Given by',x.handoverGivenBy)}
+        ${kv('Date',x.handoverDate,'font-family:var(--fm)')}
+      </div>
+    </div>
+  </details>`;
 }
 function setDetStage(id,s){
   if(!getPerms().asgn){toast('Only managers can change the stage','err');return;}
   const x=REPO.find(r=>r.id===id);if(!x)return;
-  x.stage=s;renderRepo();renderDetModal('overview');toast('Stage updated to '+s,'ok');
-}
-function renderDetClients(x,pane){
-  pane=pane||document.getElementById('det-content');
-  const tks=x.tickers.length?x.tickers.map(t=>`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--c1);border:1px solid var(--b1);border-radius:var(--r8);margin:3px"><span style="font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase">${t.type}</span><span style="font-family:var(--fm);font-weight:700;font-size:13px">${t.ticker}</span></div>`).join(''):'<span style="color:var(--t3)">No tickers</span>';
-  pane.innerHTML=`<div class="det-section-title">Clients &amp; Versions</div>
-    <div class="info-box ib-blue" style="margin-bottom:14px"><span>&#8505;</span><span>All data below is auto-populated from the ICAL Master Calendar feed. Start date shows when Indxx first started sending data to each client.</span></div>
-    <div style="border:1px solid var(--b1);border-radius:var(--r10);overflow:hidden;margin-bottom:18px">${clientVersionTable(x)}</div>
-    <div class="det-section-title">Tickers by version</div>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;padding:10px;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10)">${tks}</div>`;
-}
-function renderDetAddlInfo(x,pane){
-  pane=pane||document.getElementById('det-content');
-  const row=(lbl,val,mono)=>`<div style="display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;color:var(--t3);width:180px;flex-shrink:0">${lbl}</span><span style="font-size:12px;font-weight:600;${mono?'font-family:var(--fm)':''}">${val||'<span style="color:var(--t3);font-weight:400">—</span>'}</span></div>`;
-  const langs=(x.methodLang&&x.methodLang.length)?x.methodLang.map(l=>`<span class="tag tag-bl" style="margin:2px">${l}</span>`).join(''):'<span style="color:var(--t3)">—</span>';
-  const takenName=x.handoverTakenBy?USERS.find(u=>u.id===x.handoverTakenBy)?.name||x.handoverTakenBy:null;
-  pane.innerHTML=`<div class="det-section-title">Additional information</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-      <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
-        <div class="fsec" style="margin-top:0">Classification</div>
-        ${row('ITICS',x.itics?`<span class="tag ${x.itics==='Yes'?'tag-rev':'tag-ca'}">${x.itics}</span>`:null,false)}
-        ${row('Index family',x.indexFamily)}
-        <div style="padding:8px 0;border-bottom:1px solid var(--b0)"><span style="font-size:11px;color:var(--t3);display:block;margin-bottom:4px">Methodology language</span><div style="display:flex;flex-wrap:wrap">${langs}</div></div>
-      </div>
-      <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
-        <div class="fsec" style="margin-top:0">Handover</div>
-        ${row('Taken by',takenName)}
-        ${row('Given by',x.handoverGivenBy)}
-        ${row('Handover date',x.handoverDate,true)}
-      </div>
-    </div>`;
+  x.stage=s;renderRepo();renderDetModal('overview');toast('Stage \u2192 '+s,'ok');
 }
 
 function renderDetInfo(x,pane){
@@ -1906,8 +1957,6 @@ const DATE_FIELDS=[
   {id:'selection',     lbl:'Selection date',             req:true, wlOnly:false,rebalSkip:true},
   {id:'weightfreeze',  lbl:'Weight freeze date',         req:true, wlOnly:false,rebalSkip:false},
   {id:'prelim',        lbl:'Prelim. communication',      req:false,wlOnly:false,rebalSkip:false},
-  {id:'qc',            lbl:'Quality control date',       req:true, wlOnly:false,rebalSkip:false},
-  {id:'icom',          lbl:'ICOM date',                  req:false,wlOnly:false,rebalSkip:false},
   {id:'pubannounce',   lbl:'Public announcement',        req:true, wlOnly:false,rebalSkip:false},
   {id:'clientcomm',    lbl:'Client communication',       req:true, wlOnly:false,rebalSkip:false},
 ];
@@ -1925,8 +1974,6 @@ function getRS(evtId){
     RS[evtId].selection={...defaultRS(),v:'near_wd_nm',wd:'Friday',months:2,ref:'effective date'};
     RS[evtId].weightfreeze={...defaultRS(),v:'n_td_before',n:5,ref:'effective date'};
     RS[evtId].prelim={...defaultRS(),v:'n_td_before',n:6,ref:'effective date'};
-    RS[evtId].qc={...defaultRS(),v:'n_td_before',n:4,ref:'effective date'};
-    RS[evtId].icom={...defaultRS(),v:'n_td_before',n:3,ref:'effective date'};
     RS[evtId].pubannounce={...defaultRS(),v:'n_td_before',n:2,ref:'effective date'};
     RS[evtId].clientcomm={...defaultRS(),v:'n_td_before',n:1,ref:'effective date'};
     RS[evtId].portfolio_recv={...defaultRS(),v:'portfolio_recv',n:2};
@@ -1965,7 +2012,7 @@ function renderRb(evtId){
 // Maps a DATE_FIELDS id to the lowercase phrase used in ref/anchor option lists
 // (e.g. 'selection' -> 'selection date'), so we can filter a field's own name —
 // and any field that hasn't been calculated yet — out of its own reference dropdown.
-const FIELD_REF_PHRASE={effective:'effective date',selection:'selection date',weightfreeze:'weight freeze date',prelim:'prelim communication',qc:'quality control date',icom:'icom date',pubannounce:'public announcement date',clientcomm:'client communication date'};
+const FIELD_REF_PHRASE={effective:'effective date',selection:'selection date',weightfreeze:'weight freeze date',prelim:'prelim communication',pubannounce:'public announcement date',clientcomm:'client communication date'};
 function validRefOpts(opts,fid){
   const idx=DATE_FIELDS.findIndex(f=>f.id===fid);
   if(idx<0)return opts; // unknown field id (e.g. portfolio_recv) — leave untouched
@@ -2089,7 +2136,55 @@ function updWz(){
     if(cta)cta.innerHTML='&#10003; Add to repository';
   }
 }
-function wzNext(s){if(s===0&&!selICAL){toast('Select an index from ICAL first','err');return;}wzStep++;updWz();}
+function wzNext(s){
+  if(s===0){
+    // Step 0 → 1: must have selected an index from ICAL
+    if(!selICAL){toast('Select an index from ICAL first','err');return;}
+  }
+  if(s===1){
+    // Step 1 → 2: Reconstitution AND Rebalance must both be enabled, have a frequency, and have months configured
+    var errors=[];
+    var reconCb=document.querySelector('#blk-reconst input[type=checkbox]');
+    var rebalCb=document.querySelector('#blk-rebal input[type=checkbox]');
+    if(!reconCb||!reconCb.checked)errors.push('Reconstitution must be enabled');
+    if(!rebalCb||!rebalCb.checked)errors.push('Rebalance must be enabled');
+    if(reconCb&&reconCb.checked){
+      var rFreq=document.getElementById('freq-reconst')?.value;
+      if(!rFreq)errors.push('Reconstitution: select a frequency');
+      else if(rFreq!=='Monthly'&&(!monthSel['reconst']||monthSel['reconst'].size<(FREQ_LIMITS[rFreq]||0)))errors.push('Reconstitution: select active months for '+rFreq+' frequency');
+    }
+    if(rebalCb&&rebalCb.checked){
+      var bFreq=document.getElementById('freq-rebal')?.value;
+      var sameCb=document.querySelector('#body-rebal input[type=checkbox]');
+      var isSame=sameCb&&sameCb.checked;
+      if(!isSame){
+        if(!bFreq)errors.push('Rebalance: select a frequency');
+        else if(bFreq!=='Monthly'&&(!monthSel['rebal']||monthSel['rebal'].size<(FREQ_LIMITS[bFreq]||0)))errors.push('Rebalance: select active months for '+bFreq+' frequency');
+      }
+    }
+    if(errors.length){toast(errors[0],'err');return;}
+  }
+  if(s===2){
+    // Step 2 → 3: All mandatory date rule fields must be configured for each active event
+    var evts=getActiveEvts();
+    var errs=[];
+    evts.forEach(function(evtId){
+      var ct=selICAL?.label||'Black Label';
+      var flds=fieldsFor(evtId,ct).filter(function(f){return f.req;});
+      // "Configured" means the rule-type is not the factory default AND has been touched,
+      // OR any non-default rule type is set. We check by seeing if RS entry exists for this evt.
+      // The simplest gate: just ensure the active events have freq+months (already checked step 1
+      // for reconst/rebal); for date rules, trust that defaults are intentional (rules are pre-filled
+      // by the rule builder). We only require the mandatory fields have a rule-type selected.
+      // Since RS[evtId] is initialized with defaults on first access, this always passes —
+      // we can't tell if the manager actually reviewed it. Instead we just gate on completion
+      // of earlier steps (already done) and let the date rules be valid as configured.
+    });
+    // No blocking validation here — date rules have sensible defaults and the manager
+    // can always go back. Proceed to Additional Info.
+  }
+  wzStep++;updWz();
+}
 function wzBack(s){wzStep--;updWz();}
 
 function filterICAL(){icalQ=(document.getElementById('ical-q')?.value||'').toLowerCase();renderICAL();}
@@ -2115,14 +2210,39 @@ function selICL(name){
   document.querySelectorAll('.ical-row').forEach(r=>r.classList.remove('selected'));
   event.currentTarget.classList.add('selected');
   const si=document.getElementById('ical-sel-info');si.style.display='block';
+  const rmb=selICAL.rmb==='Review';
+  const tks=selICAL.tickers.map(t=>`<span style="margin-right:8px"><span style="color:var(--t3);font-size:9px;font-weight:600">${t.type} </span><strong>${t.ticker}</strong></span>`).join('')||'—';
   document.getElementById('ical-autofill').innerHTML=`
-    <div><div class="exp-l">Label</div>${labelTag(selICAL.label)}</div>
-    <div><div class="exp-l">Agent</div><strong>${selICAL.agent}</strong></div>
-    <div><div class="exp-l">Clients</div>${selICAL.clients.join(', ')||'—'}</div>
-    <div><div class="exp-l">Tickers</div><span style="font-family:var(--fm);font-size:11px">${selICAL.tickers.map(t=>`${t.type}:${t.ticker}`).join(' · ')||'—'}</span></div>
-    <div><div class="exp-l">Contract</div>${selICAL.contract||'—'}</div>
-    <div><div class="exp-l">Review Managed By</div><strong style="color:${selICAL.rmb==='Review'?'var(--purt)':'var(--warnt)'}">${selICAL.rmb}</strong></div>`;
+    <div style="margin-bottom:10px">
+      <div style="font-size:16px;font-weight:800;color:var(--t0);margin-bottom:5px">${selICAL.name}</div>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        ${labelTag(selICAL.label)}
+        <span style="font-size:11px;color:var(--t2)">${selICAL.agent}</span>
+        <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:${rmb?'var(--purl)':'var(--warnl)'};color:${rmb?'var(--purt)':'var(--warnt)'}">
+          ${selICAL.rmb} managed
+        </span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid rgba(22,107,15,.25);border-radius:var(--r8);overflow:hidden">
+      <div style="padding:9px 12px;border-right:1px solid rgba(22,107,15,.15)">
+        <div style="font-size:9px;font-weight:700;color:var(--okt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Contract</div>
+        <div style="font-size:11px;font-weight:600;color:var(--t0)">${selICAL.contract||'—'}</div>
+      </div>
+      <div style="padding:9px 12px;border-right:1px solid rgba(22,107,15,.15)">
+        <div style="font-size:9px;font-weight:700;color:var(--okt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Client(s)</div>
+        <div style="font-size:11px;font-weight:600;color:var(--t0)">${selICAL.clients.join(', ')||'—'}</div>
+      </div>
+      <div style="padding:9px 12px;border-right:1px solid rgba(22,107,15,.15)">
+        <div style="font-size:9px;font-weight:700;color:var(--okt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Tickers</div>
+        <div style="font-family:var(--fm);font-size:11px;color:var(--t0)">${tks}</div>
+      </div>
+      <div style="padding:9px 12px">
+        <div style="font-size:9px;font-weight:700;color:var(--okt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Live date</div>
+        <div style="font-family:var(--fm);font-size:11px;font-weight:600;color:var(--t0)">${selICAL.liveDate||'—'}</div>
+      </div>
+    </div>`;
 }
+
 
 /* ── STABLE SCHEDULE SYSTEM ── */
 const FREQ_LIMITS={Annual:1,'Semi-Annual':2,Quarterly:4,Monthly:12};
@@ -2181,19 +2301,23 @@ function renderMG(id,freq){
   if(freq==='Monthly'){
     grid.innerHTML='';
     MONTHS.forEach(function(m){var d=document.createElement('div');d.className='mb-btn on';d.style.pointerEvents='none';d.textContent=m;grid.appendChild(d);});
-    if(hint){hint.className='mhint info';hint.textContent='All 12 months implied.';}
-    if(lbl)lbl.textContent='Active months (all)';
+    if(hint){hint.className='mhint info';hint.textContent='All 12 months — no selection needed.';}
+    if(lbl)lbl.textContent='Active months (all 12)';
     return;
   }
   var lim=FREQ_LIMITS[freq]||0,sel=monthSel[id]||new Set();
-  if(lbl)lbl.textContent='Pick exactly '+lim+' month'+(lim>1?'s':'');
+  if(lbl){
+    if(freq==='Annual')lbl.textContent='Pick 1 month';
+    else if(freq==='Semi-Annual')lbl.textContent='Pick a starting month — partner auto-fills';
+    else if(freq==='Quarterly')lbl.textContent='Pick a starting month — all 4 auto-fill';
+  }
   grid.innerHTML='';
   MONTHS.forEach(function(m,i){
-    var isSel=sel.has(i),isDim=!isSel&&sel.size>=lim;
+    var isSel=sel.has(i);
     var d=document.createElement('div');
-    d.className='mb-btn'+(isSel?' on':'')+(isDim?' dim':'');
+    d.className='mb-btn'+(isSel?' on':'');
     d.textContent=m;
-    if(!isDim)(function(ii){d.onclick=function(){toggleM(id,ii,lim);};})(i);
+    (function(ii){d.onclick=function(){toggleM(id,ii,lim);};})(i);
     grid.appendChild(d);
   });
   updHint(id,freq);
@@ -2201,15 +2325,42 @@ function renderMG(id,freq){
 function toggleM(id,idx,lim){
   if(!monthSel[id])monthSel[id]=new Set();
   var s=monthSel[id];
-  if(s.has(idx))s.delete(idx);else if(s.size<lim)s.add(idx);
+  var freq=document.getElementById('freq-'+id)?.value||'';
+  // Compute which month indices belong to this frequency pattern starting from idx.
+  // The "root" month is always the earliest in the cycle (idx % interval),
+  // so clicking any month in a pattern selects/deselects the whole pattern together.
+  var pattern=[];
+  if(freq==='Semi-Annual'){
+    // Two months exactly 6 apart; root = the smaller of {idx, idx+6}%12
+    var root=idx%6; // Jan-Jun map to 0-5, Jul-Dec also map to 0-5
+    pattern=[root,root+6];
+  }else if(freq==='Quarterly'){
+    // Four months exactly 3 apart; root = idx%3 (0, 1, or 2)
+    var root3=idx%3;
+    pattern=[root3,root3+3,root3+6,root3+9];
+  }else{
+    // Annual (lim=1): single click, no auto-fill needed
+    pattern=[idx];
+  }
+  // Toggle: if all pattern months are currently selected, deselect all; otherwise select all
+  var allOn=pattern.every(function(i){return s.has(i);});
+  s.clear();
+  if(!allOn){pattern.forEach(function(i){s.add(i);});}
   var f=document.getElementById('freq-'+id);if(f)renderMG(id,f.value);
 }
 function updHint(id,freq){
   var h=document.getElementById('mhint-'+id);if(!h)return;
-  var lim=FREQ_LIMITS[freq]||0,n=(monthSel[id]||new Set()).size;
-  if(!n){h.className='mhint info';h.textContent='Select '+lim+' month'+(lim>1?'s':'')+'.';}
-  else if(n<lim){h.className='mhint err';h.textContent=n+'/'+lim+' — need '+(lim-n)+' more.';}
-  else{h.className='mhint ok';h.textContent='✓ '+lim+' month'+(lim>1?'s':'')+' confirmed.';}
+  var lim=FREQ_LIMITS[freq]||0,sel=monthSel[id]||new Set(),n=sel.size;
+  var isAutoFill=(freq==='Semi-Annual'||freq==='Quarterly');
+  if(!n){
+    h.className='mhint info';
+    h.textContent=isAutoFill?'Click any month — the remaining '+(lim-1)+' will auto-fill.':'Select 1 month.';
+  }else if(n<lim){
+    h.className='mhint err';h.textContent=n+'/'+lim+' — need '+(lim-n)+' more.';
+  }else{
+    var names=Array.from(sel).sort(function(a,b){return a-b;}).map(function(i){return MONTHS[i];}).join(', ');
+    h.className='mhint ok';h.textContent='✓ '+names;
+  }
 }
 
 
@@ -2224,47 +2375,113 @@ function renderWzRev(){
   const x=selICAL;
   var hdEl=document.getElementById('wz-handover-date');
   if(hdEl)hdEl.value=x.liveDate||'';
-  var ids_wz=getActiveEvts();var L_wz={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'};
-  var evts=ids_wz.map(function(id){return{id:id,title:L_wz[id]||id};});
-  var readyMsg=cfgEditingId
-    ? 'Ready to save &mdash; review the updated configuration below, then click <strong>Save changes</strong>.'
-    : 'Ready to add &mdash; review everything below, then click <strong>Add to repository</strong>.';
-  var itics=document.getElementById('wz-itics')?.value||'No';
-  var family=document.getElementById('wz-idx-family')?.value||'Benchmark';
-  var handoverTaken=document.getElementById('wz-handover-taken')?.value;
-  var handoverTakenName=USERS.find(function(u){return u.id===handoverTaken;})?.name||'—';
-  var handoverGiven=document.getElementById('wz-handover-given')?.value||'—';
-  var handoverDate=document.getElementById('wz-handover-date')?.value||'—';
+
+  var ids_wz=getActiveEvts();
+  var ETITLES={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'};
+  var evts=ids_wz.map(function(id){return{id:id,title:ETITLES[id]||id};});
+
+  var itics=document.getElementById('wz-itics')?.value||'';
+  var family=document.getElementById('wz-idx-family')?.value||'';
   var priId=document.getElementById('wz-primary-analyst')?.value;
   var peerId=document.getElementById('wz-peer-analyst')?.value;
   var priName=USERS.find(function(u){return u.id===priId;})?.name;
   var peerName=USERS.find(function(u){return u.id===peerId;})?.name;
+  var handoverTaken=document.getElementById('wz-handover-taken')?.value;
+  var handoverTakenName=USERS.find(function(u){return u.id===handoverTaken;})?.name||'—';
+  var handoverGiven=document.getElementById('wz-handover-given')?.value||'';
+  var handoverDate=document.getElementById('wz-handover-date')?.value||'';
+  var qcOffset=parseInt(document.getElementById('wz-qc-offset')?.value)||0;
+  var icomOffset=parseInt(document.getElementById('wz-icom-offset')?.value)||0;
+
+  // Validation summary — show what's complete and what's still missing
+  var issues=[];
+  if(!itics)issues.push('ITICS not selected');
+  if(!family)issues.push('Index family not selected');
+  if(!wzLangs||!wzLangs.length)issues.push('Methodology language not selected');
+  if(!priId)issues.push('Primary analyst not assigned');
+  if(evts.length===0)issues.push('No event types enabled in schedule');
+  evts.forEach(function(e){
+    var freq=document.getElementById('freq-'+e.id)?.value;
+    var sameCb=document.querySelector('#body-'+e.id+' input[type=checkbox]');
+    if(!freq&&!(sameCb&&sameCb.checked))issues.push(e.title+' frequency not set');
+  });
+
+  // Helper: value cell with red highlight if missing
+  var val=function(v,required){
+    if(!v||v==='—')return required?'<span style="color:var(--errt);font-weight:600">⚠ Required</span>':'<span style="color:var(--t3)">—</span>';
+    return'<span style="font-weight:600">'+v+'</span>';
+  };
+
+  // kv row helper
+  var kv=function(l,v){return'<div class="kv-row"><span class="kv-lbl">'+l+'</span><div class="kv-val">'+v+'</div></div>';};
+
+  // Schedule: freq + months for each event
+  var schedRows=evts.map(function(e){
+    var sameCb=document.querySelector('#body-'+e.id+' input[type=checkbox]');
+    var isSame=sameCb&&sameCb.checked;
+    if(isSame){return kv(e.title,'<span style="color:var(--t3);font-size:11px">Same as Reconstitution</span>')}
+    var freq=document.getElementById('freq-'+e.id)?.value||'';
+    var sel=monthSel[e.id];
+    var months=sel&&sel.size?Array.from(sel).sort(function(a,b){return a-b;}).map(function(i){return MONTHS[i];}).join(', '):'';
+    var freqDisplay=!freq?'<span style="color:var(--errt);font-weight:600">⚠ Not set</span>':
+      freq==='Monthly'?'Monthly (all 12)':
+      months?freq+' · '+months:
+      '<span style="color:var(--errt);font-weight:600">⚠ Months not selected</span>';
+    return kv(e.title,freqDisplay);
+  }).join('');
+
   document.getElementById('wz-review').innerHTML=`
-    <div class="info-box ib-ok" style="margin-bottom:16px"><span>✓</span><span>${readyMsg}</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">From ICAL</div>
-        <div class="fg"><div class="exp-l">Name</div><div style="font-size:14px;font-weight:700">${x.name}</div></div>
-        <div class="fg"><div class="exp-l">Label / Agent</div>${labelTag(x.label)} <span style="font-size:12px">${x.agent}</span></div>
-        <div class="fg"><div class="exp-l">Clients</div><span style="font-size:12px">${x.clients.join(', ')||'—'}</span></div>
-        <div class="fg" style="margin-bottom:0"><div class="exp-l">Tickers</div><span style="font-family:var(--fm);font-size:11px">${x.tickers.map(t=>`${t.type}:${t.ticker}`).join(' · ')||'—'}</span></div>
+    ${issues.length?`
+    <div style="background:var(--errl);border:1px solid var(--errt);border-radius:var(--r8);padding:10px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--errt);margin-bottom:5px">⚠ ${issues.length} item${issues.length>1?'s':''} still need${issues.length===1?'s':''} attention before saving:</div>
+      ${issues.map(i=>'<div style="font-size:11px;color:var(--errt);padding:1px 0">· '+i+'</div>').join('')}
+    </div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+
+      <!-- From ICAL -->
+      <div class="det-card" style="padding:14px">
+        <div class="det-card-title">From ICAL <span style="font-weight:400;color:var(--t3);font-size:8px">AUTO-POPULATED · READ ONLY</span></div>
+        <div style="font-size:15px;font-weight:800;color:var(--t0);margin-bottom:10px">${x.name}</div>
+        ${kv('Label / Agent',labelTag(x.label)+' <span style="font-size:11px">'+x.agent+'</span>')}
+        ${kv('Contract',x.contract||'—')}
+        ${kv('Client(s)',x.clients.join(', ')||'—')}
+        ${kv('Tickers',x.tickers.map(t=>'<span style="font-family:var(--fm);font-size:10px;font-weight:700;padding:1px 5px;background:var(--c1);border:1px solid var(--b1);border-radius:3px;margin-right:4px"><span style="color:var(--t3);font-weight:400">'+t.type+' </span>'+t.ticker+'</span>').join('')||'—')}
+        ${kv('Live date','<span style="font-family:var(--fm)">'+x.liveDate+'</span>')}
+        ${kv('Managed by',x.rmb==='Review'?'<span class="tag tag-rev">Review</span>':'<span class="tag tag-ops">Operations</span>')}
       </div>
-      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">Schedule</div>
-        ${evts.map(e=>`<div class="fg"><div class="exp-l">${e.title}</div><div style="font-size:12px;font-weight:600">${document.getElementById('freq-'+e.id)?.value||'<span style="color:var(--t3)">Not set</span>'}</div></div>`).join('')}
-        ${evts.length===0?'<div class="info-box ib-warn"><span>⚠</span><span>No events enabled — please go back and enable at least one.</span></div>':''}
+
+      <!-- Schedule -->
+      <div class="det-card" style="padding:14px">
+        <div class="det-card-title">Schedule configured</div>
+        ${schedRows||'<span style="color:var(--errt);font-size:11px">⚠ No events enabled</span>'}
+        ${qcOffset||icomOffset?`
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--b0)">
+          <div class="det-card-title" style="margin-bottom:6px">Internal governance dates</div>
+          ${qcOffset?kv('QC date','T-'+qcOffset+' before effective'):''}
+          ${icomOffset?kv('ICOM date','T-'+icomOffset+' before effective'):''}
+        </div>`:''}
       </div>
-      <div style="border:1px solid var(--b1);border-radius:var(--r10);padding:16px;grid-column:1/-1">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:12px">Additional information</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
-          <div class="fg"><div class="exp-l">ITICS</div><span class="tag ${itics==='Yes'?'tag-rev':'tag-ca'}" style="font-size:11px">${itics}</span></div>
-          <div class="fg"><div class="exp-l">Index family</div><span style="font-size:12px;font-weight:600">${family}</span></div>
-          <div class="fg"><div class="exp-l">Methodology language</div><span style="font-size:12px">${wzLangs.length?wzLangs.join(', '):'<span style="color:var(--t3)">None selected</span>'}</span></div>
-          <div class="fg"><div class="exp-l">Handover taken by</div><span style="font-size:12px;font-weight:600">${handoverTakenName}</span></div>
-          <div class="fg"><div class="exp-l">Handover given by</div><span style="font-size:12px">${handoverGiven}</span></div>
-          <div class="fg"><div class="exp-l">Handover date</div><span style="font-family:var(--fm);font-size:12px">${handoverDate}</span></div>
-          <div class="fg" style="margin-bottom:0"><div class="exp-l">Primary analyst</div>${priName?`<div style="display:flex;align-items:center;gap:5px">${anAv(priId)}<span style="font-size:12px;font-weight:600">${priName}</span></div>`:'<span style="font-size:12px;color:var(--t3)">Not assigned — will auto-assign</span>'}</div>
-          <div class="fg" style="margin-bottom:0"><div class="exp-l">Peer review analyst</div>${peerName?`<div style="display:flex;align-items:center;gap:5px">${anAv(peerId)}<span style="font-size:12px;font-weight:600">${peerName}</span></div>`:'<span style="font-size:12px;color:var(--t3)">Not assigned — will auto-assign</span>'}</div>
+    </div>
+
+    <!-- Additional Information — full width -->
+    <div class="det-card" style="padding:14px">
+      <div class="det-card-title">Additional information</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
+        ${kv('ITICS',itics?'<span class="tag '+(itics==='Yes'?'tag-rev':'tag-ca')+'">'+itics+'</span>':'<span style="color:var(--errt);font-weight:600">⚠ Required</span>')}
+        ${kv('Index family',val(family,true))}
+        ${kv('Methodology language',wzLangs.length?wzLangs.map(l=>'<span class="tag tag-bl" style="margin:1px 3px 1px 0">'+l+'</span>').join(''):'<span style="color:var(--errt);font-weight:600">⚠ Required</span>')}
+        ${kv('Handover taken by',val(handoverTakenName,false))}
+        ${kv('Handover given by',val(handoverGiven,false))}
+        ${kv('Handover date',handoverDate?'<span style="font-family:var(--fm)">'+handoverDate+'</span>':'<span style="color:var(--t3)">—</span>')}
+      </div>
+      <div style="border-top:1px solid var(--b0);margin-top:4px;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div class="kv-row">
+          <span class="kv-lbl">Primary analyst</span>
+          <div class="kv-val">${priName?`<div style="display:flex;align-items:center;gap:7px">${anAv(priId,26)}<span style="font-size:13px;font-weight:700">${priName}</span></div>`:'<span style="color:var(--errt);font-weight:600">⚠ Required — must be assigned before saving</span>'}</div>
+        </div>
+        <div class="kv-row">
+          <span class="kv-lbl">Peer analyst</span>
+          <div class="kv-val">${peerName?`<div style="display:flex;align-items:center;gap:7px">${anAv(peerId,26)}<span style="font-size:13px;font-weight:700">${peerName}</span></div>`:'<span style="color:var(--t3)">Not assigned</span>'}</div>
         </div>
       </div>
     </div>`;
@@ -2273,15 +2490,13 @@ function saveIdx(){
   if(!selICAL){toast('No index selected','err');return;}
   const hasFast=document.querySelector('#blk-fast input[type=checkbox]')?.checked||false;
   const hasSpec=document.querySelector('#blk-spec input[type=checkbox]')?.checked||false;
+
   if(cfgEditingId){
-    // Editing an existing index from Index Config — update schedule/event config in place,
-    // never touch its id, stage, dates, clients, or ticker data.
     var existing=REPO.find(function(r){return r.id===cfgEditingId;});
     if(!existing){toast('Index not found','err');cfgEditingId=null;return;}
     existing.monthly=selICAL.monthly||existing.monthly;
     existing.reviewTypes=selICAL.reviewTypes&&selICAL.reviewTypes.length?selICAL.reviewTypes:existing.reviewTypes;
-    existing.hasFast=hasFast;
-    existing.hasSpec=hasSpec;
+    existing.hasFast=hasFast;existing.hasSpec=hasSpec;
     if(hasFast){
       existing.fastThreshold=parseInt(document.getElementById('fast-threshold')?.value)||existing.fastThreshold||10;
       existing.fastSource=document.getElementById('fast-source')?.value||existing.fastSource||'eligible';
@@ -2303,26 +2518,68 @@ function saveIdx(){
     showView('v-repo',document.querySelectorAll('.sbi')[0]);
     return;
   }
+
+  // ── Final validation before adding a new index ──
+  var errs=[];
+
+  // 1. Schedule: Reconstitution + Rebalance must be configured
+  var reconCb=document.querySelector('#blk-reconst input[type=checkbox]');
+  var rebalCb=document.querySelector('#blk-rebal input[type=checkbox]');
+  if(!reconCb||!reconCb.checked)errs.push('Reconstitution must be enabled in Schedule');
+  if(!rebalCb||!rebalCb.checked)errs.push('Rebalance must be enabled in Schedule');
+  if(reconCb&&reconCb.checked){
+    var rFreq=document.getElementById('freq-reconst')?.value;
+    if(!rFreq)errs.push('Reconstitution: frequency not set');
+    else if(rFreq!=='Monthly'&&(!monthSel['reconst']||monthSel['reconst'].size<(FREQ_LIMITS[rFreq]||0)))errs.push('Reconstitution: months not fully configured');
+  }
+
+  // 2. Additional info: ITICS, Index family, at least 1 language, Primary analyst
+  var itics=document.getElementById('wz-itics')?.value;
+  var family=document.getElementById('wz-idx-family')?.value;
+  var primaryAnalyst=document.getElementById('wz-primary-analyst')?.value;
+  if(!itics)errs.push('Additional info: ITICS field is required');
+  if(!family)errs.push('Additional info: Index family is required');
+  if(!wzLangs||!wzLangs.length)errs.push('Additional info: at least one methodology language is required');
+  if(!primaryAnalyst)errs.push('Additional info: Primary analyst must be selected');
+
+  if(errs.length){
+    toast(errs[0],'err');
+    // If schedule-related, go back to Step 1; if additional info related, go to Step 3
+    if(errs[0].includes('Reconstitution')||errs[0].includes('Rebalance')){wzStep=1;updWz();}
+    else if(errs[0].includes('Additional info')){wzStep=3;updWz();}
+    return;
+  }
+
+  // ── Build the entry ──
+  var qcOffset=parseInt(document.getElementById('wz-qc-offset')?.value)||0;
+  var icomOffset=parseInt(document.getElementById('wz-icom-offset')?.value)||0;
   const entry={...selICAL,id:selICAL.name,stage:'To Start',dates:genDates(selICAL),hasFast,hasSpec,
-    itics:document.getElementById('wz-itics')?.value||'No',
+    itics:itics,
     methodLang:wzLangs.slice(),
-    indexFamily:document.getElementById('wz-idx-family')?.value||'Benchmark',
+    indexFamily:family,
     handoverTakenBy:document.getElementById('wz-handover-taken')?.value||'',
     handoverGivenBy:document.getElementById('wz-handover-given')?.value||'',
     handoverDate:document.getElementById('wz-handover-date')?.value||selICAL.liveDate||'',
+    // Governance dates stored as T-N offsets (0 = not tracked for this index)
+    qcOffset:qcOffset,
+    icomOffset:icomOffset,
   };
+
   REPO.unshift(entry);
-  // Use the explicitly chosen Primary/Peer analyst from the wizard; fall back to
-  // round-robin auto-assignment only if the manager left either field blank.
-  const chosenAnalyst=document.getElementById('wz-primary-analyst')?.value;
-  const chosenPeer=document.getElementById('wz-peer-analyst')?.value;
+
+  // No auto-assignment: only set ASGN if the manager explicitly chose someone.
+  // If left blank, the index remains unassigned until the manager uses the Assignment panel.
+  const chosenAnalyst=primaryAnalyst;
+  const chosenPeer=document.getElementById('wz-peer-analyst')?.value||'';
   if(chosenAnalyst||chosenPeer){
-    const auto=getAsgn(entry.id,entry.rmb); // ensures an entry exists in ASGN
-    ASGN[entry.id]={analyst:chosenAnalyst||auto.analyst,peer:chosenPeer||auto.peer};
-  } else {
-    getAsgn(entry.id,entry.rmb);
+    if(!ASGN[entry.id])ASGN[entry.id]={analyst:null,peer:null};
+    if(chosenAnalyst)ASGN[entry.id].analyst=chosenAnalyst;
+    if(chosenPeer)ASGN[entry.id].peer=chosenPeer;
   }
-  renderRepo();toast(`"${selICAL.name}" added to repository`,'ok');
+  // (If neither was chosen, ASGN[entry.id] stays undefined — shows as "—" in the table)
+
+  renderRepo();
+  toast(`"${selICAL.name}" added to repository`,'ok');
   showView('v-repo',document.querySelectorAll('.sbi')[0]);
 }
 
