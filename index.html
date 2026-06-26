@@ -28,6 +28,13 @@ button,input,select,textarea{font-family:var(--f);font-size:inherit}
 .sb-user:hover{background:var(--c1)}
 .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--fm)}
 .sb-user-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ── Tooltip system: any element with data-tip gets a styled hover tooltip ── */
+[data-tip]{position:relative;cursor:default}
+[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#f8fafc;font-size:11px;font-weight:500;padding:5px 9px;border-radius:6px;white-space:pre-wrap;max-width:260px;min-width:80px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.18);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;line-height:1.4}
+[data-tip]:hover::after{opacity:1}
+/* arrow */
+[data-tip]::before{content:'';position:absolute;bottom:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1e293b;opacity:0;transition:opacity .15s;pointer-events:none;z-index:9999}
+[data-tip]:hover::before{opacity:1}
 .sb-user-role{font-size:10px;color:var(--t2)}
 /* MAIN */
 .main{flex:1;margin-left:210px;min-width:0}
@@ -172,13 +179,13 @@ tr:hover .act-btns{opacity:1}
 .cfg-hint{font-size:10px;color:var(--t2);margin-top:3px}
 .cfg-save-bar{position:sticky;bottom:0;background:var(--c0);border-top:1px solid var(--b1);padding:10px 16px;display:flex;gap:8px;justify-content:flex-end;margin:-16px -16px 0}
 .cal-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.cal-view-toggle{display:flex;border:1px solid var(--b1);border-radius:20px;overflow:hidden;flex-shrink:0;margin-right:6px}
+.cal-view-toggle{display:flex;border:1px solid var(--b1);border-radius:20px;overflow:hidden;flex-shrink:0}
 .cal-view-btn{padding:5px 13px;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;background:var(--c0);transition:all .15s;user-select:none}
 .cal-view-btn.on{background:var(--ink);color:#fff}
 .cal-view-btn:not(.on):hover{background:var(--c1)}
 .cal-nav-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--b1);background:var(--c0);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .cal-nav-btn:hover{background:var(--c1);border-color:var(--ink)}
-.cal-month-lbl{font-size:15px;font-weight:800;color:var(--t0);flex:1}
+.cal-month-lbl{font-size:15px;font-weight:800;color:var(--t0);white-space:nowrap}
 /* ── SCHEDULE EVENT BLOCKS ── */
 .evt-blk{border:1px solid var(--b1);border-radius:var(--r8);margin-bottom:7px;overflow:hidden;transition:border-color .2s}
 .evt-blk.on{border-color:var(--ink)}
@@ -298,6 +305,160 @@ tr:hover .act-btns{opacity:1}
 .toast.on{opacity:1;transform:none}
 .t-ok{background:#166B0F;color:#fff}.t-err{background:#A81919;color:#fff}.t-info{background:var(--t0);color:var(--bg)}
 </style>
+<script>
+/* ── Minimal self-contained XLSX writer (no dependencies) ──
+   Produces a valid .xlsx (OOXML) using only base64 + Blob.
+   Supports: string/number cells, bold header row, auto col widths.
+   No external CDN required — works fully offline/sandboxed.
+*/
+var MiniXLSX=(function(){
+  /* ── tiny UTF-8 / zip helpers ── */
+  function utf8(s){
+    var b=[],i,c;
+    for(i=0;i<s.length;i++){
+      c=s.charCodeAt(i);
+      if(c<0x80)b.push(c);
+      else if(c<0x800){b.push(0xC0|(c>>6),0x80|(c&63));}
+      else{b.push(0xE0|(c>>12),0x80|((c>>6)&63),0x80|(c&63));}
+    }
+    return new Uint8Array(b);
+  }
+  function crc32(buf){
+    var t=new Int32Array(256),c,n,k;
+    for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=((c&1)?0xEDB88320^(c>>>1):(c>>>1));t[n]=c;}
+    c=0xFFFFFFFF;
+    for(n=0;n<buf.length;n++)c=t[(c^buf[n])&0xFF]^(c>>>8);
+    return(c^0xFFFFFFFF)>>>0;
+  }
+  function u16le(n){return[n&255,(n>>8)&255];}
+  function u32le(n){return[n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255];}
+  function concat(){
+    var tot=0,i,a=Array.from(arguments).map(function(x){return x instanceof Uint8Array?x:new Uint8Array(x);});
+    a.forEach(function(x){tot+=x.length;});
+    var r=new Uint8Array(tot),off=0;
+    a.forEach(function(x){r.set(x,off);off+=x.length;});
+    return r;
+  }
+  function deflateRaw(data){return data;} // store method (no compression) — universally compatible
+  function zipEntry(name,data){
+    var nb=utf8(name),db=data instanceof Uint8Array?data:utf8(data);
+    var crc=crc32(db),sz=db.length;
+    // local file header
+    var lh=concat([0x50,0x4B,0x03,0x04,20,0,0,0,0,0,0,0,0,0],
+      u32le(crc),u32le(sz),u32le(sz),
+      u16le(nb.length),u16le(0),
+      nb,db);
+    return{name:nb,data:db,crc:crc,sz:sz,lh:lh};
+  }
+  function buildZip(entries){
+    var parts=[],offsets=[],off=0;
+    entries.forEach(function(e){
+      offsets.push(off);parts.push(e.lh);off+=e.lh.length;
+    });
+    var cdParts=[],cdSize=0;
+    entries.forEach(function(e,i){
+      var cd=concat([0x50,0x4B,0x01,0x02,20,0,20,0,0,0,0,0,0,0,0,0],
+        u32le(e.crc),u32le(e.sz),u32le(e.sz),
+        u16le(e.name.length),u16le(0),u16le(0),u16le(0),u16le(0),u32le(0),u32le(offsets[i]),
+        e.name);
+      cdParts.push(cd);cdSize+=cd.length;
+    });
+    var cdOff=off;
+    var eocd=concat([0x50,0x4B,0x05,0x06,0,0,0,0],
+      u16le(entries.length),u16le(entries.length),
+      u32le(cdSize),u32le(cdOff),u16le(0));
+    return concat.apply(null,parts.concat(cdParts).concat([eocd]));
+  }
+
+  /* ── XML cell builders ── */
+  function xmlEsc(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function colName(n){// 0-indexed → A,B,...Z,AA,...
+    var s='';n++;
+    while(n>0){s=String.fromCharCode(64+(n%26||26))+s;n=Math.floor((n-(n%26||26))/26);}
+    return s;
+  }
+  function buildSheet(rows, boldFirst){
+    var maxC=0;
+    rows.forEach(function(r){if(r.length>maxC)maxC=r.length;});
+    // col widths
+    var colW=[];
+    for(var c=0;c<maxC;c++){
+      var w=8;
+      rows.forEach(function(r){var v=String(r[c]||'');if(v.length>w)w=v.length;});
+      colW.push(Math.min(40,w+2));
+    }
+    var colsXml=colW.map(function(w,i){return'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" bestFit="1"/>';}).join('');
+    var rowsXml=rows.map(function(row,ri){
+      var cells=row.map(function(val,ci){
+        var addr=colName(ci)+(ri+1);
+        var isNum=typeof val==='number'||(!isNaN(val)&&val!=='');
+        var s=(boldFirst&&ri===0)?'s="1"':'';
+        if(isNum)return'<c r="'+addr+'" '+s+'><v>'+Number(val)+'</v></c>';
+        return'<c r="'+addr+'" t="inlineStr" '+s+'><is><t>'+xmlEsc(val)+'</t></is></c>';
+      }).join('');
+      return'<row r="'+(ri+1)+'">'+cells+'</row>';
+    }).join('');
+    return'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      +'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      +'<cols>'+colsXml+'</cols>'
+      +'<sheetData>'+rowsXml+'</sheetData>'
+      +'</worksheet>';
+  }
+
+  /* ── Public API ── */
+  return{
+    download:function(sheets, filename){
+      // sheets = [{name, rows}]  rows[0] = header
+      var sheetXmls=sheets.map(function(s){return buildSheet(s.rows,true);});
+      var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        +'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        +'</Relationships>';
+      var wbRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        +'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        +sheets.map(function(s,i){return'<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';}).join('')
+        +'</Relationships>';
+      var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        +'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        +'<fonts><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+        +'<fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+        +'<borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        +'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        +'<cellXfs><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        +'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+        +'</styleSheet>';
+      var wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        +'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        +'<sheets>'
+        +sheets.map(function(s,i){return'<sheet name="'+xmlEsc(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';}).join('')
+        +'</sheets></workbook>';
+      var ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        +'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        +'<Default Extension="xml" ContentType="application/xml"/>'
+        +'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        +sheets.map(function(s,i){return'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';}).join('')
+        +'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        +'</Types>';
+
+      var entries=[
+        zipEntry('[Content_Types].xml', ct),
+        zipEntry('_rels/.rels', rels),
+        zipEntry('xl/workbook.xml', wb),
+        zipEntry('xl/_rels/workbook.xml.rels', wbRels),
+        zipEntry('xl/styles.xml', styles),
+      ];
+      sheetXmls.forEach(function(xml,i){entries.push(zipEntry('xl/worksheets/sheet'+(i+1)+'.xml',xml));});
+
+      var bytes=Array.from(buildZip(entries));
+      var b64=btoa(bytes.map(function(b){return String.fromCharCode(b);}).join(''));
+      var a=document.createElement('a');a.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+b64;a.download=filename||'export.xlsx';a.target='_blank';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    }
+  };
+})();
+</script>
 </head>
 <body>
 <div class="app">
@@ -314,7 +475,6 @@ tr:hover .act-btns{opacity:1}
     <button class="sbi" onclick="showView('v-cal',this);renderCal()"><span class="sbi-icon">&#128197;</span><span>Calendar</span></button>
     <div class="sb-sec">Tools</div>
     <button class="sbi" onclick="showView('v-hol',this);renderHol()"><span class="sbi-icon">🗓</span><span>Holiday List</span></button>
-    <button class="sbi" onclick="showView('v-dl',this);applyDL()"><span class="sbi-icon">⬇</span><span>Download Center</span></button>
     <button class="sbi" onclick="showView('v-bot',this);renderTRA()"><span class="sbi-icon">🔬</span><span>Thematic Research</span></button>
     <div class="sb-sec">System</div>
     <button class="sbi" onclick="openOv('ov-rbac');renderRBAC()"><span class="sbi-icon">🔐</span><span>Team &amp; Roles</span></button>
@@ -340,7 +500,55 @@ tr:hover .act-btns{opacity:1}
 <!-- ══ REPO VIEW ══ -->
 <div class="view" id="v-repo">
   <div class="ph"><div><h1>Index Repository</h1><p id="repo-sub">Loading…</p></div>
-    <div class="ph-acts" id="repo-ph-acts"></div>
+    <div class="ph-acts" id="repo-ph-acts">
+      <div style="position:relative">
+        <button class="btn btn-ghost btn-sm" onclick="toggleExportPanel()" id="export-btn" style="display:flex;align-items:center;gap:5px">⬇ Export</button>
+        <div id="export-panel" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:200;background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);box-shadow:var(--sh2);padding:16px;min-width:340px">
+          <div style="font-size:12px;font-weight:700;color:var(--t0);margin-bottom:12px">Export index data</div>
+
+          <!-- Filters -->
+          <div class="fg2" style="margin-bottom:8px">
+            <div class="fg"><label class="flbl">Label</label><select class="fsel" id="ex-lbl" style="font-size:11px"><option value="">All</option><option>Black Label</option><option>White Label</option><option>Calculation</option></select></div>
+            <div class="fg"><label class="flbl">Managed by</label><select class="fsel" id="ex-rmb" style="font-size:11px"><option value="">All</option><option>Review</option><option>Operations</option></select></div>
+          </div>
+          <div class="fg2" style="margin-bottom:8px">
+            <div class="fg"><label class="flbl">Agent</label><select class="fsel" id="ex-agent" style="font-size:11px"><option value="">All</option><option>Indxx</option><option>Solactive</option><option>STOXX</option><option>Indxx + STOXX</option><option>Kaiko</option></select></div>
+            <div class="fg"><label class="flbl">Review type</label><select class="fsel" id="ex-rt" style="font-size:11px"><option value="">All</option><option>Reconstitution</option><option>Rebalance</option><option>Adhoc Rebalance</option><option>Review</option><option>Monthly Review</option><option>IPO Review</option><option>Theme Review</option><option>CG Review</option><option>CA Review</option><option>CE Review</option></select></div>
+          </div>
+          <div class="fg2" style="margin-bottom:8px">
+            <div class="fg"><label class="flbl">Stage</label><select class="fsel" id="ex-stage" style="font-size:11px"><option value="">All</option><option>To Start</option><option>Selection</option><option>Peer Review</option><option>Quality Control</option><option>ICOM</option><option>Weighting</option><option>Proforma</option><option>Opening</option><option>Done</option></select></div>
+            <div class="fg"><label class="flbl">ETF launched</label><select class="fsel" id="ex-etf" style="font-size:11px"><option value="">All</option><option>Yes</option><option>No</option></select></div>
+          </div>
+          <div class="fg2" style="margin-bottom:14px">
+            <div class="fg"><label class="flbl">Live date from</label><input type="date" class="finp" id="ex-from" style="font-size:11px"></div>
+            <div class="fg"><label class="flbl">Live date to</label><input type="date" class="finp" id="ex-to" style="font-size:11px"></div>
+          </div>
+
+          <!-- Scope selector -->
+          <div style="margin-bottom:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Data scope</div>
+            <div style="display:flex;gap:6px">
+              <div class="ex-scope-btn on" data-scope="index"   onclick="setExScope(this)" style="flex:1;text-align:center;padding:7px 6px;border-radius:var(--r8);border:1px solid var(--ink);background:var(--inkl);cursor:pointer;font-size:11px;font-weight:600;color:var(--inkt)">📋 Index-wise</div>
+              <div class="ex-scope-btn"    data-scope="client"  onclick="setExScope(this)" style="flex:1;text-align:center;padding:7px 6px;border-radius:var(--r8);border:1px solid var(--b1);background:var(--c1);cursor:pointer;font-size:11px;font-weight:600;color:var(--t2)">👤 Client-wise</div>
+              <div class="ex-scope-btn"    data-scope="both"    onclick="setExScope(this)" style="flex:1;text-align:center;padding:7px 6px;border-radius:var(--r8);border:1px solid var(--b1);background:var(--c1);cursor:pointer;font-size:11px;font-weight:600;color:var(--t2)">⊞ Both</div>
+            </div>
+            <div id="ex-scope-hint" style="font-size:10px;color:var(--t3);margin-top:5px">One row per index — name, label, tickers, review types, analysts, stage</div>
+          </div>
+
+          <!-- Download buttons -->
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="runExport('csv')">⬇ CSV</button>
+            <button class="btn btn-sm" style="flex:1;justify-content:center;background:var(--okl);color:var(--okt);border:1px solid var(--ok)" onclick="runExport('xls')">⬇ XLS</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetExport()">Reset</button>
+          </div>
+          <div style="font-size:9px;color:var(--t3);margin-bottom:6px;line-height:1.5">
+            CSV · Index or Client scope = 1 file &nbsp;|&nbsp; Both = 2 files<br>
+            XLS · Both = 2 sheets in one workbook
+          </div>
+          <div id="ex-count" style="font-size:10px;color:var(--t3);text-align:center"></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="summ-row" id="summ-row"></div>
   <!-- Assignments panel (manager-only; shown only when "Manage Assignments" is toggled on) -->
@@ -638,10 +846,12 @@ tr:hover .act-btns{opacity:1}
         <div class="cal-view-btn on" data-mode="month" onclick="setCalMode('month',this)">Monthly</div>
         <div class="cal-view-btn" data-mode="week" onclick="setCalMode('week',this)">Weekly</div>
       </div>
-      <button class="cal-nav-btn" onclick="shiftCal(-1)">&#8249;</button>
-      <div class="cal-month-lbl" id="cal-month-lbl"></div>
-      <button class="cal-nav-btn" onclick="shiftCal(1)">&#8250;</button>
-      <button class="btn btn-sm btn-ghost" onclick="calToday()" style="margin-left:4px">Today</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="cal-nav-btn" onclick="shiftCal(-1)">&#8249;</button>
+        <div class="cal-month-lbl" id="cal-month-lbl"></div>
+        <button class="cal-nav-btn" onclick="shiftCal(1)">&#8250;</button>
+        <button class="btn btn-sm btn-ghost" onclick="calToday()" style="margin-left:2px">Today</button>
+      </div>
     </div>
     <!-- Day headers -->
     <div class="cal-grid" id="cal-grid">
@@ -678,7 +888,7 @@ tr:hover .act-btns{opacity:1}
 </div>
 
 <!-- ══ DOWNLOAD CENTER ══ -->
-<div class="view" id="v-dl">
+<div class="view" id="v-dl" style="display:none!important">
   <div class="ph"><div><h1>Data Download Center</h1><p>Filter by any field combination and export</p></div></div>
   <div style="background:var(--c0);border:1px solid var(--b1);border-radius:var(--r12);padding:18px;margin-bottom:14px;box-shadow:var(--sh1)">
     <div class="fsec" style="margin-top:0">Filters</div>
@@ -773,6 +983,25 @@ function showView(id,btn){
   var el=document.getElementById(id);if(el)el.classList.add('on');
   document.querySelectorAll('.sbi').forEach(function(b){b.classList.remove('on');});
   if(btn)btn.classList.add('on');
+  setTimeout(initTooltips,80);
+}
+/* Auto-set title on any element whose text is visually truncated (scrollWidth > clientWidth).
+   Runs after each render so dynamically generated rows are covered. */
+function initTooltips(){
+  document.querySelectorAll('[class],[style]').forEach(function(el){
+    var st=window.getComputedStyle(el);
+    if(st.textOverflow==='ellipsis'&&el.scrollWidth>el.clientWidth+2){
+      if(!el.title&&el.textContent.trim())el.title=el.textContent.trim();
+    }
+  });
+  /* Also ensure cal-evt items always have title = full index name */
+  document.querySelectorAll('.cal-evt').forEach(function(el){
+    if(!el.title&&el.textContent.trim())el.title=el.textContent.trim();
+  });
+  /* rt-pill tooltips — show full review type on hover */
+  document.querySelectorAll('.rt-pill').forEach(function(el){
+    if(!el.title&&el.textContent.trim())el.title=el.textContent.trim();
+  });
 }
 function openOv(id){var el=document.getElementById(id);if(el){el.style.display='flex';el.classList.add('open');}}
 function closeOv(id){var el=document.getElementById(id);if(el){el.style.display='none';el.classList.remove('open');}}
@@ -788,8 +1017,102 @@ function init(){
   showView('v-repo',document.querySelectorAll('.sbi')[0]);
 }
 window.addEventListener('DOMContentLoaded',init);
-/* ── MISSING STUBS ── */
-function renderRbac(){renderRBAC();}
+/* ── EXPORT PANEL ── */
+function toggleExportPanel(){
+  var p=document.getElementById('export-panel');
+  var open=p.style.display!=='none';
+  p.style.display=open?'none':'block';
+  if(!open)updateExCount();
+  if(!open){setTimeout(function(){document.addEventListener('click',function h(e){if(!document.getElementById('export-panel').contains(e.target)&&e.target.id!=='export-btn'){document.getElementById('export-panel').style.display='none';document.removeEventListener('click',h);}});},10);}
+}
+function getExportData(){
+  var lbl=document.getElementById('ex-lbl').value,rmb=document.getElementById('ex-rmb').value,agent=document.getElementById('ex-agent').value,rt=document.getElementById('ex-rt').value,stage=document.getElementById('ex-stage').value,etf=document.getElementById('ex-etf').value,from=document.getElementById('ex-from').value,to=document.getElementById('ex-to').value;
+  return REPO.filter(function(x){
+    if(!canView(x.rmb))return false;
+    if(lbl&&x.label!==lbl)return false;
+    if(rmb&&x.rmb!==rmb)return false;
+    if(agent&&x.agent!==agent)return false;
+    if(rt&&!(x.reviewTypes||[]).some(function(r){return r===rt;}))return false;
+    if(stage&&x.stage!==stage)return false;
+    if(etf&&x.etf!==etf)return false;
+    if(from&&x.liveDate&&x.liveDate<from)return false;
+    if(to&&x.liveDate&&x.liveDate>to)return false;
+    return true;
+  });
+}
+function updateExCount(){var d=getExportData();var el=document.getElementById('ex-count');if(el)el.textContent=d.length+' of '+REPO.filter(function(x){return canView(x.rmb);}).length+' indices match';}
+document.addEventListener('change',function(e){if(e.target&&e.target.id&&e.target.id.startsWith('ex-'))updateExCount();});
+var exScope='index';
+var EX_SCOPE_HINTS={index:'One row per index — name, label, tickers, review types, analysts, stage',client:'One row per client \u00d7 index — client name, index, label, contract, agent, review types',both:'XLS: 2 sheets in one workbook | CSV: 2 separate files'};
+function setExScope(btn){
+  document.querySelectorAll('.ex-scope-btn').forEach(function(b){b.style.background='var(--c1)';b.style.borderColor='var(--b1)';b.style.color='var(--t2)';b.classList.remove('on');});
+  btn.style.background='var(--inkl)';btn.style.borderColor='var(--ink)';btn.style.color='var(--inkt)';btn.classList.add('on');
+  exScope=btn.dataset.scope;
+  var h=document.getElementById('ex-scope-hint');if(h)h.innerHTML=EX_SCOPE_HINTS[exScope]||'';
+}
+function buildIndexRows(data){
+  var H=['Index Name','Label','Tickers','Client(s)','Contract','Agent','Managed By','Review Types','Live Date','ETF','Stage','Analyst','Peer Analyst'];
+  var rows=data.map(function(x){var ag=getAsgn(x.id,x.rmb);return[x.name,x.label,x.tickers.map(function(t){return t.type+':'+t.ticker;}).join(' | '),(x.clients||[]).join(', ')||'\u2014',x.contract||'\u2014',x.agent||'\u2014',x.rmb,(x.reviewTypes||[]).join(', ')||'\u2014',x.liveDate||'\u2014',x.etf||'\u2014',x.stage||'To Start',anName(ag.analyst)||'\u2014',anName(ag.peer)||'\u2014'];});
+  return{header:H,rows:rows};
+}
+function buildClientRows(data){
+  var H=['Client','Index Name','Label','Contract','Agent','Managed By','Review Types','Live Date','ETF','Stage','Analyst','Peer Analyst'];
+  var rows=[];
+  data.forEach(function(x){var ag=getAsgn(x.id,x.rmb);var clients=x.clients&&x.clients.length?x.clients:['\u2014'];clients.forEach(function(c){rows.push([c,x.name,x.label,x.contract||'\u2014',x.agent||'\u2014',x.rmb,(x.reviewTypes||[]).join(', ')||'\u2014',x.liveDate||'\u2014',x.etf||'\u2014',x.stage||'To Start',anName(ag.analyst)||'\u2014',anName(ag.peer)||'\u2014']);});});
+  rows.sort(function(a,b){return a[0].localeCompare(b[0])||a[1].localeCompare(b[1]);});
+  return{header:H,rows:rows};
+}
+function toCsvRows(header,rows){
+  var esc=function(v){var s=String(v===null||v===undefined?'':v);return(s.includes(',')||s.includes('"')||s.includes('\n'))?'"'+s.replace(/"/g,'""')+'"':s;};
+  return[header.map(esc).join(',')].concat(rows.map(function(r){return r.map(esc).join(',');})).join('\n');
+}
+function dlBlob(content,filename,type){
+  // Programmatic a.click() downloads are blocked in sandboxed iframes.
+  // Convert to data: URI and open in new tab — works everywhere.
+  var str=typeof content==='string'?content:null;
+  if(str!==null){
+    // CSV / text — use data:text URI
+    var uri='data:'+(type||'text/csv;charset=utf-8')+','+encodeURIComponent(str);
+    var a=document.createElement('a');a.href=uri;a.download=filename;a.target='_blank';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  } else {
+    // Binary (Uint8Array) — base64 encode
+    var bytes=content instanceof Uint8Array?content:new Uint8Array(content);
+    var b64=btoa(String.fromCharCode.apply(null,Array.from(bytes)));
+    var mime=(type||'application/octet-stream').split(';')[0];
+    var uri='data:'+mime+';base64,'+b64;
+    var a=document.createElement('a');a.href=uri;a.download=filename;a.target='_blank';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+}
+function runExport(fmt){
+  var data=getExportData();if(!data.length){toast('No indices match these filters','err');return;}
+  var date=new Date().toISOString().slice(0,10);
+  if(fmt==='csv'){
+    if(exScope==='index'||exScope==='both'){var d=buildIndexRows(data);dlBlob(toCsvRows(d.header,d.rows),'indxx_index_'+date+'.csv','text/csv;charset=utf-8');}
+    if(exScope==='client'||exScope==='both'){var d=buildClientRows(data);dlBlob(toCsvRows(d.header,d.rows),'indxx_client_'+date+'.csv','text/csv;charset=utf-8');}
+    toast(exScope==='both'?'2 CSV files — check your Downloads':'CSV downloaded \u2014 '+data.length+' rows','ok');
+  } else {
+    var sheets=[];
+    if(exScope==='index'||exScope==='both'){var d=buildIndexRows(data);sheets.push({name:'Index-wise',rows:[d.header].concat(d.rows)});}
+    if(exScope==='client'||exScope==='both'){var d=buildClientRows(data);sheets.push({name:'Client-wise',rows:[d.header].concat(d.rows)});}
+    MiniXLSX.download(sheets,'indxx_export_'+date+'.xlsx');
+    toast(exScope==='both'?'XLS with 2 sheets — check your Downloads':'XLS downloaded \u2014 '+data.length+' rows','ok');
+  }
+  document.getElementById('export-panel').style.display='none';
+}
+function exportCSV(){runExport('csv');}
+function exportJSON(){runExport('xls');}
+function resetExport(){['ex-lbl','ex-rmb','ex-agent','ex-rt','ex-stage','ex-etf','ex-from','ex-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});updateExCount();}
+
+function toggleTheme(){
+  var html=document.documentElement;
+  var isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  var tog=document.getElementById('theme-tog');
+  if(tog){var dot=tog.querySelector('div');if(dot){dot.style.left=isDark?'2px':'14px';tog.style.background=isDark?'var(--c2)':'var(--ink)';}}
+}
+
 function renderCalendar(){renderCal();}
 function renderRBAC(){
   var el=document.getElementById('rbac-body');if(!el)return;
@@ -1019,25 +1342,562 @@ function rmbForLabel(label){
   if(label==='Calculation') return 'Operations';
   return 'Review'; // default
 }
+/* ── MOCK REPO — Repository Master Calendar 08-05-2026 ── */
 function seedRepo(){
   if(SEEDED)return;SEEDED=true;
-  // Enforce RMB from label — overrides whatever the raw ICAL data says
+  // Always enforce rmb from label — BL+WL → Review, CA → Operations
   ICAL.forEach(x=>{ x.rmb=rmbForLabel(x.label); });
-  var _si=0;
-  // Exactly 10 distinct indices get Fast Entry and/or Special Rebalance configured —
-  // a deliberate mix so the Record Event use case shows all three states:
-  // Fast Entry only, Special Rebalance only, and both configured together.
-  var FE_ONLY=[2,9,14,20];      // 4 indices: Fast Entry only
-  var SR_ONLY=[5,12,18,26];     // 4 indices: Special Rebalance only
-  var BOTH=[3,22];              // 2 indices: both configured
-  ICAL.filter(x=>x.rmb==='Review').slice(0,40).forEach(x=>{
-    getAsgn(x.name,x.rmb);
-    var hF=FE_ONLY.includes(_si)||BOTH.includes(_si);
-    var hS=SR_ONLY.includes(_si)||BOTH.includes(_si);
-    REPO.push({...x,id:x.name,stage:'To Start',dates:genDates(x),hasFast:hF,hasSpec:hS});
-    _si++;
+  mockData().forEach(function(x){
+    REPO.push({...x,id:x.name,stage:x.stage||'To Start',dates:genDates(x)});
+    if(x._analyst)ASGN[x.name]={analyst:x._analyst,peer:x._peer||null};
   });
 }
+function mockData(){return [
+  {
+    name:"Indxx SuperDividend\u00ae US Low Volatility Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "IDIVP"}, {"type": "TR", "ticker": "IDIVT"}],versions:["GTR", "PR"],
+    liveDate:"2013-03-18",clients:["GlobalX", "GlobalX Japan"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Feb"],rebalMonths:[],
+    reviewMonths:["May", "Aug", "Nov"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra1",_peer:"ra4",
+    hasFast:true,hasSpec:true,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2013-03-18"
+  },
+  {
+    name:"Indxx India Consumer Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "IINCO"}, {"type": "TR", "ticker": "IINCOT"}],versions:["GTR", "PR"],
+    liveDate:"2013-12-16",clients:["EGA", "columbia thread needle"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Mar"],rebalMonths:[],
+    reviewMonths:["Jun", "Sep", "Dec"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-10-26",
+    _analyst:"ra2",_peer:"ra5",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2013-12-16"
+  },
+  {
+    name:"Indxx India Infrastructure Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "PR", "ticker": "IINXX"}, {"type": "TR", "ticker": "IINXXT"}],versions:["GTR", "PR"],
+    liveDate:"2013-12-16",clients:["Indxx"],
+    contract:"Product Book",etf:"No",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Sep"],rebalMonths:[],
+    reviewMonths:["Mar", "Jun", "Dec"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra3",_peer:"ra6",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2013-12-16"
+  },
+  {
+    name:"Indxx India Small Cap Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "PR", "ticker": "ISCIN"}, {"type": "TR", "ticker": "ISCINT"}],versions:["GTR", "PR"],
+    liveDate:"2013-12-16",clients:["Indxx"],
+    contract:"Product Book",etf:"No",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Mar"],rebalMonths:[],
+    reviewMonths:["Jun", "Sep", "Dec"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra4",_peer:"ra7",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2013-12-16"
+  },
+  {
+    name:"Indxx SuperDividend\u00ae Alternatives Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "IALTYT"}],versions:["GTR"],
+    liveDate:"2015-09-07",clients:["Global-X"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Rebalance", "Reconstitution"],monthly:false,
+    reconMonths:["Sep"],rebalMonths:["Mar", "Jun", "Dec"],
+    reviewMonths:[],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra5",_peer:"ra8",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Infrastructure",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2015-09-07"
+  },
+  {
+    name:"Indxx Global Agriculture Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "IGAIP"}, {"type": "TR", "ticker": "IGAI"}],versions:["GTR", "PR"],
+    liveDate:"2015-10-09",clients:["First Trust"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Rebalance", "Reconstitution"],monthly:false,
+    reconMonths:["Mar"],rebalMonths:["Jun", "Sep", "Dec"],
+    reviewMonths:[],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-11-26",
+    _analyst:"ra6",_peer:"ra9",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Technology",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2015-10-09"
+  },
+  {
+    name:"Indxx Global Natural Resources Income Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "IGNRIP"}, {"type": "TR", "ticker": "IGNRI"}],versions:["GTR", "PR"],
+    liveDate:"2015-10-09",clients:["First Trust"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Rebalance", "Reconstitution"],monthly:false,
+    reconMonths:["Jun"],rebalMonths:["Mar", "Sep", "Dec"],
+    reviewMonths:[],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra7",_peer:"ra1",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2015-10-09"
+  },
+  {
+    name:"Indxx Global Health & Wellness Thematic Index",label:"Black Label",rmb:"Review",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "IBFIT"}, {"type": "NTR", "ticker": "IBFITNT"}],versions:["GTR", "NTR"],
+    liveDate:"",clients:["Global-X"],
+    contract:"Licensed & Launched",etf:"No",
+    reviewTypes:["Reconstitution", "Theme Review"],monthly:false,
+    reconMonths:["Apr"],rebalMonths:[],
+    reviewMonths:[],themeMonths:["Apr"],
+    stage:"To Start",effectiveDate:"2026-10-26",
+    _analyst:"ra8",_peer:"ra2",
+    hasFast:true,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx Aging Population Thematic Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "ILNGR"}, {"type": "NTR", "ticker": "ILNGRNT"}],versions:["GTR", "NTR"],
+    liveDate:"",clients:["Global-X"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Theme Review"],monthly:false,
+    reconMonths:["Apr"],rebalMonths:[],
+    reviewMonths:[],themeMonths:["Apr"],
+    stage:"To Start",effectiveDate:"2026-11-26",
+    _analyst:"ra9",_peer:"ra3",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx Millennials Thematic Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "IMILN"}, {"type": "NTR", "ticker": "THEMATICHEMATIC INDEX"}],versions:["GTR"],
+    liveDate:"",clients:["Global-X"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Review", "Theme Review"],monthly:false,
+    reconMonths:["Apr"],rebalMonths:[],
+    reviewMonths:["Oct"],themeMonths:["Apr"],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra1",_peer:"ra4",
+    hasFast:false,hasSpec:true,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx Global Robotics & Artificial Intelligence Thematic Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "IBOTZ"}, {"type": "NTR", "ticker": "IBOTZNT"}],versions:["GTR", "NTR"],
+    liveDate:"",clients:["Global-X", "Horizons", "BetaShares", "Direxion", "Mirae Asset Korea"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Mar"],rebalMonths:[],
+    reviewMonths:["Sep"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-10-26",
+    _analyst:"ra2",_peer:"ra5",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Infrastructure",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx REIT Preferred Stock Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "IPFFR"}, {"type": "NTR", "ticker": "IPFFR"}],versions:["GTR"],
+    liveDate:"",clients:["Infracap"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Mar", "Sep"],rebalMonths:[],
+    reviewMonths:["Jun", "Dec"],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-09-26",
+    _analyst:"ra3",_peer:"ra6",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Technology",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx U.S. Infrastructure Development Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "IPAVE"}, {"type": "NTR", "ticker": "DEVELOPMENTUCTURE DEVELOPMENT INDEX"}],versions:["GTR"],
+    liveDate:"",clients:["Global-X"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Theme Review"],monthly:false,
+    reconMonths:["Jan", "Jul"],rebalMonths:[],
+    reviewMonths:[],themeMonths:["Jan"],
+    stage:"To Start",effectiveDate:"2026-07-26",
+    _analyst:"ra4",_peer:"ra7",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx USA Regional Banking Index",label:"Black Label",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "NTR", "ticker": "MTFRBUNT"}],versions:["NTR"],
+    liveDate:"",clients:["SMArtX"],
+    contract:"Product Book",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:false,
+    reconMonths:["Feb"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"To Start",effectiveDate:"2026-10-26",
+    _analyst:"oa2",_peer:"oa4",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Indxx US E-Commerce Index",label:"Black Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "NTR", "ticker": "MTFECONT"}],versions:["NTR"],
+    liveDate:"2017-12-09",clients:["Migdal", "SMArtX"],
+    contract:"Licensed & Launched",etf:"Yes",
+    reviewTypes:["Reconstitution", "Theme Review"],monthly:false,
+    reconMonths:["Jul"],rebalMonths:[],
+    reviewMonths:[],themeMonths:["Jul"],
+    stage:"Selection",effectiveDate:"2026-07-26",
+    _analyst:"ra6",_peer:"ra9",
+    hasFast:true,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2017-12-09"
+  },
+  {
+    name:"US Global Jets Index",label:"White Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "NTR", "ticker": "JETSX"}],versions:["NTR"],
+    liveDate:"2015-04-22",clients:["US Global", "Han ETF"],
+    contract:"Administration + Calculation",etf:"Yes",
+    reviewTypes:["Reconstitution"],monthly:false,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-09-26",
+    _analyst:"ra7",_peer:"ra1",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2015-04-22"
+  },
+  {
+    name:"North Shore Sprott Uranium Miners Index",label:"White Label",rmb:"Review",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "NTR", "ticker": "URNMXA"}],versions:["NTR"],
+    liveDate:"2022-02-16",clients:["North Shore", "Sprott"],
+    contract:"Administration + Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:false,
+    reconMonths:["Mar", "Sep"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-09-26",
+    _analyst:"ra8",_peer:"ra2",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Infrastructure",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2022-02-16"
+  },
+  {
+    name:"Terranova U.S. Quality Momentum Index",label:"White Label",rmb:"Review",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "VTUSQM"}],versions:["TR"],
+    liveDate:"2020-03-08",clients:["Virtus Investment Partners"],
+    contract:"Administration + Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:false,
+    reconMonths:["Jan", "Apr", "Jul", "Oct"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-07-26",
+    _analyst:"ra9",_peer:"ra3",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Technology",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2020-03-08"
+  },
+  {
+    name:"Indxx Global Large Cap EM Subsidiary Index",label:"White Label",rmb:"Review",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "GLCEM"}],versions:["GTR"],
+    liveDate:"",clients:["Horizon Kinetics"],
+    contract:"Administration + Calculation",etf:"No",
+    reviewTypes:["Reconstitution", "Review"],monthly:false,
+    reconMonths:["Mar"],rebalMonths:[],
+    reviewMonths:["Jun", "Sep", "Dec"],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-09-26",
+    _analyst:"oa1",_peer:"oa3",
+    hasFast:false,hasSpec:true,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Terranova U.S. Technology Sector Quality Momentum Index",label:"White Label",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "TUTSQM"}],versions:["TR"],
+    liveDate:"2021-07-06",clients:["Virtus ETFs"],
+    contract:"Product Book",etf:"No",
+    reviewTypes:["Rebalance", "Reconstitution"],monthly:false,
+    reconMonths:["Jan", "Apr", "Jul", "Oct"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-07-26",
+    _analyst:"oa2",_peer:"oa4",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2021-07-06"
+  },
+  {
+    name:"U.S. Global Sea to Sky Cargo Index",label:"White Label",rmb:"Review",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "SEAXP"}, {"type": "TR", "ticker": "SEAX"}],versions:["PR", "TR"],
+    liveDate:"2021-12-28",clients:["US Global"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution", "Rebalance"],monthly:false,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-09-26",
+    _analyst:"ra3",_peer:"ra6",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2021-12-28"
+  },
+  {
+    name:"Terranova U.S. Small Cap Quality Momentum Index",label:"White Label",rmb:"Review",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "VTUSSQM"}],versions:["TR"],
+    liveDate:"2024-09-12",clients:["Virtus"],
+    contract:"Licensed",etf:"No",
+    reviewTypes:["Reconstitution", "Rebalance"],monthly:false,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Selection",effectiveDate:"2026-09-26",
+    _analyst:"ra4",_peer:"ra7",
+    hasFast:true,hasSpec:false,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2024-09-12"
+  },
+  {
+    name:"Lifesci Biotechnology Clinical Trials Index",label:"Calculation",rmb:"Operations",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "LSCIBC"}],versions:["TR"],
+    liveDate:"2014-10-21",clients:["Life Sciences"],
+    contract:"Calculation+Real Time",etf:"Yes",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Jun", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Peer Review",effectiveDate:"2026-12-26",
+    _analyst:"oa1",_peer:"oa3",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2014-10-21"
+  },
+  {
+    name:"Lifesci Biotechnology Products Index",label:"Calculation",rmb:"Operations",
+    agent:"Solactive",calcType:"Real-Time",
+    tickers:[{"type": "TR", "ticker": "LSCIBP"}],versions:["TR"],
+    liveDate:"2014-10-21",clients:["Life Sciences"],
+    contract:"Calculation+Real Time",etf:"Yes",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Jun", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Peer Review",effectiveDate:"2026-12-26",
+    _analyst:"oa2",_peer:"oa4",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2014-10-21"
+  },
+  {
+    name:"Horizon Kinetics International Spin-off Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "ISPO"}, {"type": "NTR", "ticker": "ISPO"}],versions:["GTR"],
+    liveDate:"2016-10-05",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Peer Review",effectiveDate:"2026-09-26",
+    _analyst:"oa3",_peer:"oa5",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2016-10-05"
+  },
+  {
+    name:"Horizon Kinetics Japan Founders",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "PR", "ticker": "JFIP"}, {"type": "TR", "ticker": "JFIT"}],versions:["GTR", "PR"],
+    liveDate:"2016-10-05",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Peer Review",effectiveDate:"2026-09-26",
+    _analyst:"oa4",_peer:"oa6",
+    hasFast:false,hasSpec:true,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2016-10-05"
+  },
+  {
+    name:"Horizon Kinetics Spin-Off Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "SPO"}],versions:["GTR"],
+    liveDate:"2016-10-05",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Quality Control",effectiveDate:"2026-09-26",
+    _analyst:"oa5",_peer:"oa1",
+    hasFast:true,hasSpec:false,
+    itics:"Yes",indexFamily:"Infrastructure",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2016-10-05"
+  },
+  {
+    name:"The Alpha Brands Consumer Spending Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "BRANDS"}, {"type": "NTR", "ticker": "BRANDS"}],versions:["GTR"],
+    liveDate:"",clients:["Alpha Brands"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Quality Control",effectiveDate:"2026-12-26",
+    _analyst:"oa6",_peer:"oa2",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Technology",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Horizon Kinetics Global Spin-off Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "GSPIN"}],versions:["GTR"],
+    liveDate:"2019-08-02",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Quality Control",effectiveDate:"2026-09-26",
+    _analyst:"oa1",_peer:"oa3",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Thematic",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2019-08-02"
+  },
+  {
+    name:"Nasdaq IFED US Large-Cap Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "PR", "ticker": "IFEDLT"}, {"type": "TR", "ticker": "IFEDL"}],versions:["PR", "TR"],
+    liveDate:"",clients:["Economic Index Associates", "LLC"],
+    contract:"Administration + Calculation",etf:"Yes",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Quality Control",effectiveDate:"2026-07-26",
+    _analyst:"oa2",_peer:"oa4",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Dividend",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"GLTRI Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "PR", "ticker": "GI"}],versions:["GTR", "PR"],
+    liveDate:"2019-11-11",clients:["Aberdeen"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:[],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"ICOM",effectiveDate:"2026-11-26",
+    _analyst:"oa3",_peer:"oa5",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Sector",
+    methodLang:["English", "Spanish"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:"2019-11-11"
+  },
+  {
+    name:"Horizon Kinetics Global Spin-off Index (Local Version)",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "GSPOL"}],versions:["GTR"],
+    liveDate:"",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"ICOM",effectiveDate:"2026-09-26",
+    _analyst:"oa4",_peer:"oa6",
+    hasFast:false,hasSpec:false,
+    itics:"No",indexFamily:"Regional",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"Horizon Kinetics International Spin-off Index (Local Version)",label:"Calculation",rmb:"Operations",
+    agent:"Indxx",calcType:"EOD",
+    tickers:[{"type": "TR", "ticker": "ISPOL"}],versions:["GTR"],
+    liveDate:"",clients:["Horizon Kinetics"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Weighting",effectiveDate:"2026-09-26",
+    _analyst:"oa5",_peer:"oa1",
+    hasFast:false,hasSpec:false,
+    itics:"Yes",indexFamily:"Infrastructure",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  },
+  {
+    name:"FCF US Quality Innovation Index",label:"Calculation",rmb:"Operations",
+    agent:"Indxx + STOXX",calcType:"Real-Time",
+    tickers:[{"type": "NTR", "ticker": "FCFNV"}],versions:["NTR"],
+    liveDate:"",clients:["Trimtabs Asset Management"],
+    contract:"Calculation",etf:"No",
+    reviewTypes:["Reconstitution"],monthly:true,
+    reconMonths:["Mar", "Jun", "Sep", "Dec"],rebalMonths:[],
+    reviewMonths:[],themeMonths:[],
+    stage:"Done",effectiveDate:"2026-09-26",
+    _analyst:"oa6",_peer:"oa2",
+    hasFast:true,hasSpec:false,
+    itics:"Yes",indexFamily:"Technology",
+    methodLang:["English"],qcOffset:10,icomOffset:7,
+    handoverTakenBy:'',handoverGivenBy:'',handoverDate:""
+  }
+];}
 
 /* ── REPO RENDER ── */
 let rFilter='all',rQ='',rSort={col:'name',dir:'asc'},rPage=1,expRow=null;
@@ -1350,13 +2210,13 @@ function renderRepo(){
       <td><div class="tickers-compact">${defTk?`<div class="tk-row"><span class="tk-type">${defTk.type}</span>${defTk.ticker}</div>`:'<span style="color:var(--t3)">—</span>'}${otherCount>0?`<div style="font-size:9px;color:var(--ink);font-weight:600;cursor:pointer" title="Click row to see other versions">+${otherCount} version${otherCount>1?'s':''}</div>`:''}${etfBadge(x)?`<div style="margin-top:2px">${etfBadge(x)}</div>`:''}</div></td>
       <td>${labelTag(x.label)}</td>
       <td><div class="client-primary" title="${x.clients.join(', ')}">${x.clients[0]||'—'}</div>${x.clients.length>1?`<div class="client-more">+${x.clients.length-1} more</div>`:''}</td>
-      <td style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.contract||'—'}</td>
-      <td style="font-size:11px;color:var(--t1)">${x.agent||'—'}</td>
+      <td style="font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${x.contract||'—'}">${x.contract||'—'}</td>
+      <td style="font-size:11px;color:var(--t1)" title="${x.agent||'—'}">${x.agent||'—'}</td>
       <td><div class="rt-pills">${rtPillsFull(x)}</div></td>
       <td>${currentReviewCell(x)}</td>
       <td>${(function(){var nd=nextDateInfo(x);if(!nd)return'<span style="color:var(--t3);font-size:11px">—</span>';return'<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;font-weight:700;color:'+nd.col+';background:'+nd.col+'14;border:1px solid '+nd.col+'33;border-radius:4px;padding:1px 6px;width:fit-content">'+nd.lbl+'</span><span style="font-size:11px;font-family:var(--fm);color:var(--t1)">'+nd.val+'</span></div>';})()}</td>
-      <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.analyst)}<span style="font-size:11px">${anName(asgn.analyst)}</span></div></td>
-      <td><div style="display:flex;align-items:center;gap:4px">${anAv(asgn.peer)}<span style="font-size:11px">${anName(asgn.peer)}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:4px" title="${anName(asgn.analyst)}">${anAv(asgn.analyst)}<span style="font-size:11px">${anName(asgn.analyst)}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:4px" title="${anName(asgn.peer)}">${anAv(asgn.peer)}<span style="font-size:11px">${anName(asgn.peer)}</span></div></td>
       <td onclick="event.stopPropagation();openStagePicker('${x.id}',event)" style="cursor:pointer">${sp(x.stage||'To Start')}</td>
       <td onclick="event.stopPropagation()"><div class="act-btns">
         ${getPerms().asgn?`<div class="ibt" title="Edit" onclick="openCfgWizard('${x.id}')">✎</div>`:''}
@@ -1365,6 +2225,7 @@ function renderRepo(){
     </tr>
     ${''/* expanded row removed — clicking opens full detail modal */}`;  }).join('');
   document.getElementById('assign-badge').textContent=REPO.filter(x=>x.rmb==='Review').length;
+  setTimeout(initTooltips,50);
 }
 
 function toggleExpand(id){expRow=expRow===id?null:id;renderRepo();}
@@ -1998,14 +2859,15 @@ const RT=[
 function getRt(v){return RT.find(r=>r.v===v);}
 
 const DATE_FIELDS=[
-  {id:'portfolio_recv',lbl:'Portfolio/Universe receiving',req:false,wlOnly:true, rebalSkip:true},
-  {id:'effective',     lbl:'Effective date',             req:true, wlOnly:false,rebalSkip:false},
-  {id:'selection',     lbl:'Selection date',             req:true, wlOnly:false,rebalSkip:true},
-  {id:'weightfreeze',  lbl:'Weight freeze date',         req:true, wlOnly:false,rebalSkip:false},
-  {id:'prelim',        lbl:'Prelim. communication',      req:false,wlOnly:false,rebalSkip:false},
-  {id:'pubannounce',   lbl:'Public announcement',        req:true, wlOnly:false,rebalSkip:false},
-  {id:'clientcomm',    lbl:'Client communication',       req:true, wlOnly:false,rebalSkip:false},
+  {id:'portfolio_recv',lbl:'Portfolio/Universe receiving',req:false,wlReq:true, wlOnly:true, rebalSkip:true},
+  {id:'effective',     lbl:'Effective date',             req:true, wlReq:true,  wlOnly:false,rebalSkip:false},
+  {id:'selection',     lbl:'Selection date',             req:true, wlReq:true,  wlOnly:false,rebalSkip:true},
+  {id:'weightfreeze',  lbl:'Weight freeze date',         req:true, wlReq:true,  wlOnly:false,rebalSkip:false},
+  {id:'prelim',        lbl:'Prelim. communication',      req:false,wlReq:false, wlOnly:false,rebalSkip:false},
+  {id:'pubannounce',   lbl:'Public announcement',        req:true, wlReq:true,  wlOnly:false,rebalSkip:false},
+  {id:'clientcomm',    lbl:'Client communication',       req:true, wlReq:true,  wlOnly:false,rebalSkip:false},
 ];
+function isFieldReq(f, ct){ return ct==='White Label' ? f.wlReq : f.req; }
 function fieldsFor(evtId,ct){
   const isRebal=(evtId==='rebal'),isWL=(ct==='White Label');
   return DATE_FIELDS.filter(f=>{if(isRebal&&f.rebalSkip)return false;if(f.wlOnly&&!isWL)return false;return true;});
@@ -2051,9 +2913,35 @@ function renderRb(evtId){
   const evtTitle={reconst:'Reconstitution',rebal:'Rebalance',ipo:'IPO Review',cg:'CG Review',ca:'CA Review',ce:'CE Review'}[evtId]||evtId;
   body.innerHTML=`<div class="freq-info">&#128197; <strong>${evtTitle}</strong> — ${freqStr} &nbsp;|&nbsp; Contract: ${currentCT}</div>
 
-    ${flds.map(f=>`<div class="rule-row"><div class="rl">${f.lbl}${f.req?` <span class="req">*</span>`:''}</div><div class="rc" id="rc-${evtId}-${f.id}">${buildRC(evtId,f.id)}</div><div class="rreset" onclick="resetRC('${evtId}','${f.id}')" title="Reset">×</div></div>`).join('')}
+    ${flds.map(f=>{
+      const req=isFieldReq(f,currentCT);
+      // Optional fields get an enable/disable toggle
+      if(!req){
+        const rs=getRS(evtId);
+        if(rs[f.id]===undefined)rs[f.id]=defaultRS();
+        const enabled=rs[f.id]._enabled!==false; // default enabled
+        return`<div class="rule-row" style="background:${enabled?'':'var(--c1)'}">
+          <div class="rl" style="display:flex;align-items:center;gap:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px" title="${enabled?'Click to exclude this date':'Click to include this date'}">
+              <div onclick="traToggleDateField('${evtId}','${f.id}',this)" style="width:28px;height:16px;border-radius:8px;background:${enabled?'var(--ink)':'var(--b2)'};position:relative;transition:background .2s;cursor:pointer;flex-shrink:0">
+                <div style="width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${enabled?'14px':'2px'};transition:left .2s"></div>
+              </div>
+              <span style="${enabled?'':'color:var(--t3)'}">${f.lbl}</span>
+            </label>
+          </div>
+          <div class="rc" id="rc-${evtId}-${f.id}" style="opacity:${enabled?1:0.4};pointer-events:${enabled?'auto':'none'}">${buildRC(evtId,f.id)}</div>
+        </div>`;
+      }
+      return`<div class="rule-row"><div class="rl">${f.lbl}<span class="req"> *</span></div><div class="rc" id="rc-${evtId}-${f.id}">${buildRC(evtId,f.id)}</div></div>`;
+    }).join('')}
     <div class="rsumm"><div class="rsumm-t">Rule summary — ${evtTitle}</div><div class="rsumm-g" id="rsumm-${evtId}"></div></div>`;
   refreshSumm(evtId);
+}
+function traToggleDateField(evtId,fid,toggleEl){
+  const rs=getRS(evtId);
+  const enabled=rs[fid]._enabled!==false;
+  rs[fid]._enabled=!enabled;
+  renderRb(evtId); // re-render the whole date rules panel
 }
 // Maps a DATE_FIELDS id to the lowercase phrase used in ref/anchor option lists
 // (e.g. 'selection' -> 'selection date'), so we can filter a field's own name —
@@ -2093,7 +2981,7 @@ function buildRC(evtId,fid){
   return h;
 }
 function rfld(evtId,fid){const el=document.getElementById(`rc-${evtId}-${fid}`);if(el)el.innerHTML=buildRC(evtId,fid);refreshSumm(evtId);}
-function refreshSumm(evtId){const g=document.getElementById(`rsumm-${evtId}`);if(!g)return;g.innerHTML=fieldsFor(evtId,currentCT).map(f=>`<div class="rs-i"><span class="rs-l">${f.lbl}</span><span class="rs-v">${descRule(evtId,f.id)}</span></div>`).join('');}
+function refreshSumm(evtId){const g=document.getElementById(`rsumm-${evtId}`);if(!g)return;g.innerHTML=fieldsFor(evtId,currentCT).filter(f=>{const req=isFieldReq(f,currentCT);if(req)return true;return getRS(evtId)[f.id]?._enabled!==false;}).map(f=>`<div class="rs-i"><span class="rs-l">${f.lbl}</span><span class="rs-v">${descRule(evtId,f.id)}</span></div>`).join('');}
 function rcType(e,f,v){getRS(e)[f].v=v;rfld(e,f);}
 function rcP(e,f,k,v){getRS(e)[f][k]=isNaN(v)?v:(parseFloat(v)||0);rfld(e,f);}
 function rcThenType(e,f,v){const s=getRS(e)[f];s.then_v=v;if(!s.then_s)s.then_s={};s.then_s.v=v;rfld(e,f);}
@@ -2237,7 +3125,7 @@ function filterICAL(){icalQ=(document.getElementById('ical-q')?.value||'').toLow
 function setIF(f,el){icalFilter=f;document.querySelectorAll('#ical-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');filterICAL();}
 function renderICAL(){
   const p=getPerms();
-  const pool=(p.eR&&p.eO)?ICAL:(p.eR?ICAL.filter(x=>x.rmb==='Review'):ICAL.filter(x=>x.rmb==='Operations'));
+  const pool=(p.eR&&p.eO)?ICAL:(p.eR?ICAL.filter(x=>rmbForLabel(x.label)==='Review'):ICAL.filter(x=>rmbForLabel(x.label)==='Operations'));
   const data=pool.filter(x=>{
     const lf=icalFilter==='all'||x.label===icalFilter;
     const qf=!icalQ||x.name.toLowerCase().includes(icalQ)||(x.tickers||[]).some(t=>t.ticker.toLowerCase().includes(icalQ));
@@ -2451,6 +3339,11 @@ function renderWzRev(){
     var sameCb=document.querySelector('#body-'+e.id+' input[type=checkbox]');
     if(!freq&&!(sameCb&&sameCb.checked))issues.push(e.title+' frequency not set');
   });
+  // WL-specific: portfolio/universe receiving date is compulsory
+  if(x.label==='White Label'){
+    var prRule=RS['reconst']&&RS['reconst']['portfolio_recv'];
+    if(!prRule||!prRule.n)issues.push('Portfolio/Universe receiving date required for White Label');
+  }
 
   // Helper: value cell with red highlight if missing
   var val=function(v,required){
@@ -2588,6 +3481,14 @@ function saveIdx(){
   if(!wzLangs||!wzLangs.length)errs.push('Additional info: at least one methodology language is required');
   if(!primaryAnalyst)errs.push('Additional info: Primary analyst must be selected');
 
+  // 3. WL-specific: Portfolio/Universe receiving date rule must be configured
+  if(selICAL&&selICAL.label==='White Label'){
+    var prRule=RS['reconst']&&RS['reconst']['portfolio_recv'];
+    if(!prRule||prRule.v===''||prRule.v==='n_td_before'&&!prRule.n){
+      errs.push('Date rules: Portfolio/Universe receiving date is required for White Label indices');
+    }
+  }
+
   if(errs.length){
     toast(errs[0],'err');
     // If schedule-related, go back to Step 1; if additional info related, go to Step 3
@@ -2659,7 +3560,7 @@ function renderAsgnWorkload(){
     +wlVals.map(w=>{
       const pPct=(w.p/maxCount*100),prPct=(w.pr/maxCount*100);
       return '<div class="asgn-wl-row">'
-        +'<span class="asgn-wl-name">'+w.a.name.split(' ')[0]+'</span>'
+        +'<span class="asgn-wl-name" title="'+w.a.name+'">'+w.a.name.split(' ')[0]+'</span>'
         +'<div class="asgn-wl-bar-track"><div class="asgn-wl-bar-p" style="width:'+pPct+'%"></div><div class="asgn-wl-bar-r" style="width:'+prPct+'%"></div></div>'
         +'<span class="asgn-wl-count">'+w.p+'p · '+w.pr+'pr</span>'
         +'</div>';
@@ -2932,7 +3833,7 @@ function renderHol(){
 }
 function setHY(y,el){holY=y;document.querySelectorAll('#hol-yr-tabs .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderHol();}
 function setHR(r,el){holR=r;document.querySelectorAll('#hol-reg-chips .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderHol();}
-function dlHolCSV(){const t=document.getElementById('hol-tbl');const rows=[...(t||{}).querySelectorAll('tr')].map(r=>[...r.querySelectorAll('th,td')].map(c=>c.textContent.trim()).join(','));const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),download:`indxx_holidays_${holY}.csv`});a.click();toast('Holiday CSV exported','ok');}
+function dlHolCSV(){const t=document.getElementById('hol-tbl');const rows=[...(t||{}).querySelectorAll('tr')].map(r=>[...r.querySelectorAll('th,td')].map(c=>c.textContent.trim()).join(','));const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));a.download=`indxx_holidays_${holY}.csv`;a.target='_blank';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Holiday CSV exported','ok');}
 
 /* ── DOWNLOAD CENTER ── */
 let dlData=[];
@@ -2953,7 +3854,7 @@ function applyDL(){
   t.querySelector('tbody').innerHTML=dlData.slice(0,50).map(x=>{const ag=getAsgn(x.id,x.rmb);const vals=[x.name,x.label,x.tickers.map(t=>`${t.type}:${t.ticker}`).join(' · '),x.clients.join(', ')||'—',x.contract||'—',x.agent||'—',x.rmb,(x.reviewTypes||[]).join(', ')||'—',x.liveDate||'—',x.etf||'—',x.stage||'To Start',anName(ag.analyst),anName(ag.peer)];return`<tr>${vals.map(v=>`<td style="padding:6px 10px;border-bottom:1px solid var(--b0);white-space:nowrap">${v}</td>`).join('')}</tr>`;}).join('');
 }
 function resetDL(){['dl-lbl','dl-rmb','dl-agent','dl-rt','dl-stage','dl-etf','dl-from','dl-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('dl-q').value='';applyDL();}
-function dlCSV(){if(!dlData.length){toast('Apply filters first','err');return;}const H=['Index Name','Label','Tickers','Client(s)','Contract','Agent','RMB','Review Types','Live Date','ETF','Stage','Analyst','Peer Analyst'];const rows=[H.join(','),...dlData.map(x=>{const ag=getAsgn(x.id,x.rmb);return[`"${x.name}"`,x.label,x.tickers.map(t=>`${t.type}:${t.ticker}`).join('|'),`"${x.clients.join('|')}"`,`"${x.contract||''}"`,x.agent||'',x.rmb,`"${(x.reviewTypes||[]).join('|')}"`,x.liveDate||'',x.etf||'',x.stage||'To Start',anName(ag.analyst),anName(ag.peer)].join(',');})];const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),download:`indxx_repo_${new Date().toISOString().slice(0,10)}.csv`});a.click();toast('CSV downloaded','ok');}
+function dlCSV(){if(!dlData.length){toast('Apply filters first','err');return;}const H=['Index Name','Label','Tickers','Client(s)','Contract','Agent','RMB','Review Types','Live Date','ETF','Stage','Analyst','Peer Analyst'];const rows=[H.join(','),...dlData.map(x=>{const ag=getAsgn(x.id,x.rmb);return[`"${x.name}"`,x.label,x.tickers.map(t=>`${t.type}:${t.ticker}`).join('|'),`"${x.clients.join('|')}"`,`"${x.contract||''}"`,x.agent||'',x.rmb,`"${(x.reviewTypes||[]).join('|')}"`,x.liveDate||'',x.etf||'',x.stage||'To Start',anName(ag.analyst),anName(ag.peer)].join(',');})];const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));a.download=`indxx_repo_${new Date().toISOString().slice(0,10)}.csv`;a.target='_blank';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('CSV downloaded','ok');}
 
 /* ── AI BOT ── */
 /* ── THEMATIC RESEARCH ASSISTANT ── */
@@ -3738,6 +4639,7 @@ function renderCalGrid(){
     }
     grid.appendChild(cell);
   }
+  setTimeout(initTooltips,50);
 }
 
 function renderCalWeek(){
@@ -4196,5 +5098,5 @@ function saveCfg(id){
 }
 
 /* ── INIT ── */
-seedRepo();renderRepo();applyDL();
+seedRepo();renderRepo();
 </script></body></html>
